@@ -8,8 +8,26 @@
 <body>
 {% for item in items %}
     <p>
-        {{ item }}
+<strong> Reuters 20 Newsgroup post: </strong></p><p>
+           {{ item.text }}
     </p>
+
+<p>
+<strong>Predicted topic:  </strong>
+{{ item.predicted_labels }}
+</p>
+
+<p>
+<strong>Prediction margin:</strong> {{ item.class_proba }}
+</p>
+<div id='button'>
+	  <form action="/update" method="post">
+	    <input type=submit value='Correct' name='update_classifier'>
+		<input type=submit value='Incorrect' name='update_classifier'>
+		<input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
+		<input type=hidden value='{{ item.text }}' name='uncertain_article'>
+	  </form>
+</div>
 {% endfor %}
-</body>
+  </body>
 </html>
