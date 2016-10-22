@@ -64,6 +64,7 @@ def update_class_proba(path):
     conn.commit()
     conn.close()
 
+###### End user feature feedback #######
 # This gives the index location of the weight
 def look_up_weight(word):
     return list(ordered_weights_dict.keys()).index(word)
@@ -78,20 +79,21 @@ def increase_weight(index):
 def decrease_weight(index):
     clf.coef_[0][index] = clf.coef_[0][index] / 10
 
+
+###### Uncertainty sampling #####
 def uncertainty_sample(class_proba):
     uncertainty = abs(class_proba - 0.5)
     return uncertainty
 
 
 ### Forms
-# Need to add a constraint to only allow single words? Or if not then to split them myself and vectorize
 class ReviewForm(Form):
     feature_feedback = TextAreaField('',
                                 [validators.DataRequired(),
                                 validators.length(min=3)])
 
 
-### Flask functions
+#### Flask functions ######
 
 '''
 @app.route('/')
@@ -144,10 +146,12 @@ def update_classifier_feedback():
 @app.route('/change-weights', methods=['POST'])
 def manually_change_weights():
     feedback = request.form['feature_feedback']
+    # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
     increase_weight(look_up_weight(feedback))
     return render_template('thank-you.html')
 
-
+# This function uses the uncertainty_query function defined above and uses it in a
+# SQL SELECT query to show the article the model is most uncertain about
 # thanks.html leads here
 @app.route('/article')
 def display_article():
@@ -158,7 +162,6 @@ def display_article():
     items = [dict(predicted_labels=row[0], text=row[1], class_proba=row[2]) for row in cursor.fetchall()]
     #items = {predicted_labels:cursor[0], text:cursor[1], class_proba:cursor[2]}
     return render_template('article.html', items=items)
-
 
 # Need a second version of thanks.html to loop back here
 @app.route('/article-with-reweighting')
