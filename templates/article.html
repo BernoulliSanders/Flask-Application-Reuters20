@@ -8,8 +8,12 @@
 <body>
 {% for item in items %}
     <p>
-<strong> Reuters 20 Newsgroup post: </strong></p><p>
-           {{ item.text }}
+ Reuters RCV1 article: </p>
+<p><strong> {{ item.Headline }}
+</strong>
+</p>
+<p>
+           {{ item.Text }}
     </p>
 
 <p>
@@ -25,7 +29,7 @@
 	    <input type=submit value='Correct' name='update_classifier'>
 		<input type=submit value='Incorrect' name='update_classifier'>
 		<input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
-		<input type=hidden value='{{ item.text }}' name='uncertain_article'>
+		<input type=hidden value='{{ item.Text }}' name='uncertain_article'>
 	  </form>
 </div>
 {% endfor %}

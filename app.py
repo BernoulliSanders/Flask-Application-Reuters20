@@ -12,11 +12,14 @@ app = Flask(__name__)
 
 
 cur_dir = os.path.dirname(__file__)
+# Load classifier
 clf = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
-                 'Reuters20-classifier.pkl'), 'rb'))
-db = os.path.join(cur_dir, 'reviews.sqlite')
-db2 = os.path.join(cur_dir, 'reuters_testX_with_proba.sqlite')
+                 'RCV1_log_reg_classifier.pkl'), 'rb'))
+#db = os.path.join(cur_dir, 'reviews.sqlite')
+
+# Read in unlabelled pool of 1000 articles from RCV1
+db2 = os.path.join(cur_dir, 'RCV1.sqlite')
 
 
 ordered_weights_dict = pickle.load(open(os.path.join(cur_dir,'pkl_objects','ordered_weights_dict.pkl'), 'rb'))
@@ -31,7 +34,7 @@ def classify(document):
 def train(document, y):
     X = vect.transform([document])
     clf.partial_fit(X, [y])
-
+'''
 def sqlite_entry(path, document, y):
     conn = sqlite3.connect(path)
     c = conn.cursor()
@@ -39,7 +42,7 @@ def sqlite_entry(path, document, y):
     " VALUES (?, ?, DATETIME('now'))", (document, y))
     conn.commit()
     conn.close()
-
+'''
 def train_model(document, y):
     X = vect.transform([document])
     clf.partial_fit(X, [y])
@@ -47,20 +50,18 @@ def train_model(document, y):
 def update_class_proba(path):
     conn = sqlite3.connect(path)
     c = conn.cursor()
-    cursor = c.execute('SELECT text, indexID FROM reuters_test_X')
+    cursor = c.execute('SELECT text, indexID FROM RCV1_test_X')
     all_rows = cursor.fetchall()
     X = vect.transform(x[0] for x in all_rows)
     new_proba = list(float(z) for z in clf.predict_proba(X)[:, 1])
-    IDs = list(int(zz) for zz in np.arange(0, 740, 1))
+    IDs = list(int(zz) for zz in np.arange(2006, 3006, 1))
     new_proba_tuple = list(zip(new_proba,IDs))
-    #c.execute('ALTER TABLE reuters_test_X ADD COLUMN predict_proba_tplus1 REAL')
-    #c.executemany('UPDATE reuters_test_X SET predict_proba_tplus1=? WHERE indexID=?', new_proba_tuple)
-    c.executemany('UPDATE reuters_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
+    c.executemany('UPDATE RCV1_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
     new_class = list(int(xy) for xy in clf.predict(X))
     new_class_tuple = list(zip(new_class,IDs))
-    c.executemany('UPDATE reuters_test_X SET prediction=? WHERE indexID=?', new_class_tuple)
-    c.execute('UPDATE reuters_test_X SET predicted_labels=\'Guns\' WHERE prediction=1')
-    c.execute('UPDATE reuters_test_X SET predicted_labels=\'Middle-east\' WHERE prediction=0')
+    c.executemany('UPDATE RCV1_test_X SET prediction=? WHERE indexID=?', new_class_tuple)
+    c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Environment and natural world\' WHERE prediction=1')
+    c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Defence\' WHERE prediction=0')
     conn.commit()
     conn.close()
 
@@ -114,7 +115,7 @@ def results():
                                 probability=round(proba*100, 2))
     return render_template('reviewform.html', form=form)
 
-
+'''
 @app.route('/thanks', methods=['POST'])
 def feedback():
     feedback = request.form['feedback_button']
@@ -127,13 +128,13 @@ def feedback():
     train(review, y)
     sqlite_entry(db, review, y)
     return render_template('thanks.html')
-
+'''
 @app.route('/update', methods=['POST'])
 def update_classifier_feedback():
     feedback = request.form['update_classifier']
     article = request.form['uncertain_article']
     prediction = request.form['prediction']
-    inv_label = {"Middle-east": 0, "Guns": 1}
+    inv_label = {"Defence": 0, "Environment and natural world": 1}
     y = inv_label[prediction]
     if feedback == 'Incorrect':
         y = int(not(y))
@@ -151,15 +152,15 @@ def manually_change_weights():
     return render_template('thank-you.html')
 
 # This function uses the uncertainty_query function defined above and uses it in a
-# SQL SELECT query to show the article the model is most uncertain about
+# SQL SELECT query to display to the user the article which the model is most uncertain about
 # thanks.html leads here
 @app.route('/article')
 def display_article():
     conn = sqlite3.connect(db2)
     conn.create_function("uncertainty_query",1,uncertainty_sample)
     c = conn.cursor()
-    cursor = c.execute('SELECT predicted_labels, text, MIN(uncertainty_query(class_proba)) FROM reuters_test_X')
-    items = [dict(predicted_labels=row[0], text=row[1], class_proba=row[2]) for row in cursor.fetchall()]
+    cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
+    items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
     #items = {predicted_labels:cursor[0], text:cursor[1], class_proba:cursor[2]}
     return render_template('article.html', items=items)
 
@@ -169,7 +170,7 @@ def display_article_manual_reweighting():
     conn = sqlite3.connect(db2)
     conn.create_function("uncertainty_query", 1, uncertainty_sample)
     c = conn.cursor()
-    cursor = c.execute('SELECT predicted_labels, text, MIN(uncertainty_query(class_proba)) FROM reuters_test_X')
+    cursor = c.execute('SELECT predicted_labels, text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
     items = [dict(predicted_labels=row[0], text=row[1], class_proba=row[2]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
     return render_template('article-with-reweighting.html', items=items, form=form)
