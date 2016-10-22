@@ -10,17 +10,14 @@ from vectorizer import vect
 
 app = Flask(__name__)
 
-
 cur_dir = os.path.dirname(__file__)
 # Load classifier
 clf = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
                  'RCV1_log_reg_classifier.pkl'), 'rb'))
-#db = os.path.join(cur_dir, 'reviews.sqlite')
 
 # Read in unlabelled pool of 1000 articles from RCV1
 db2 = os.path.join(cur_dir, 'RCV1.sqlite')
-
 
 ordered_weights_dict = pickle.load(open(os.path.join(cur_dir,'pkl_objects','ordered_weights_dict.pkl'), 'rb'))
 
@@ -34,15 +31,7 @@ def classify(document):
 def train(document, y):
     X = vect.transform([document])
     clf.partial_fit(X, [y])
-'''
-def sqlite_entry(path, document, y):
-    conn = sqlite3.connect(path)
-    c = conn.cursor()
-    c.execute("INSERT INTO review_db (review, sentiment, date)"\
-    " VALUES (?, ?, DATETIME('now'))", (document, y))
-    conn.commit()
-    conn.close()
-'''
+
 def train_model(document, y):
     X = vect.transform([document])
     clf.partial_fit(X, [y])
@@ -96,13 +85,6 @@ class ReviewForm(Form):
 
 #### Flask functions ######
 
-'''
-@app.route('/')
-def index():
-    form = ReviewForm(request.form)
-    return render_template('reviewform.html', form=form)
-'''
-
 @app.route('/results', methods=['POST'])
 def results():
     form = ReviewForm(request.form)
@@ -115,20 +97,7 @@ def results():
                                 probability=round(proba*100, 2))
     return render_template('reviewform.html', form=form)
 
-'''
-@app.route('/thanks', methods=['POST'])
-def feedback():
-    feedback = request.form['feedback_button']
-    review = request.form['review']
-    prediction = request.form['prediction']
-    inv_label = {'negative': 0, 'positive': 1}
-    y = inv_label[prediction]
-    if feedback == 'Incorrect':
-        y = int(not(y))
-    train(review, y)
-    sqlite_entry(db, review, y)
-    return render_template('thanks.html')
-'''
+
 @app.route('/update', methods=['POST'])
 def update_classifier_feedback():
     feedback = request.form['update_classifier']
@@ -178,3 +147,4 @@ def display_article_manual_reweighting():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
