@@ -3,13 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <title>Review</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
 </head>
 <body>
+<table style="float:right">
+{% from "_formhelpers.html" import render_field %}
+<tr><th>
+ Top 10 weights
+</th></tr>
+<tr><td>
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td >
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td>
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td>
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td>
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td>
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td>
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td>
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td>
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td>
+<label for="weight">Weight</label>
+<input type="range" id="weight" min="10" value="10" max="2000" step="100">
+</td></tr>
+<tr><td></td></tr>
+<tr><th>Would a different word be better?</th></tr>
+<tr><td>
+<form method=post action="/change-weights">
+      <dl>
+  {{ render_field(form.feature_feedback, cols='20', rows='2') }}
+  </dl>
+  </td>
+  <td>
+    <input type=submit value='Add new word' name='submit_feature_feedback'>
+      <input type="hidden" value='{{ form.feature_feedback }}' name='feature_feedback'>
+</form>
+</td></tr>
+</table>
+  </body>
+
 {% for item in items %}
-    <p>
-<strong> Reuters 20 Newsgroup post: </strong></p><p>
-           {{ item.text }}
+
+<h2><strong> {{ item.Headline }}
+</strong>
+</h2>
+<p>
+           {{ item.Text }}
     </p>
 
 <p>
@@ -21,7 +85,7 @@
 <strong>Prediction margin:</strong> {{ item.class_proba }}
 </p>
 <div id='button'>
-	  <form action="/update" method="post">
+	  <form action="/update-v2" method="post">
 	    <input type=submit value='Correct' name='update_classifier'>
 		<input type=submit value='Incorrect' name='update_classifier'>
 		<input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
@@ -31,19 +95,4 @@
 {% endfor %}
 
 
-{% from "_formhelpers.html" import render_field %}
-
-
-<form method=post action="/change-weights">
-      <dl>
-	{{ render_field(form.feature_feedback, cols='10', rows='2') }}
-  </dl>
-  <div>
-	  <input type=submit value='What word is important?' name='submit_feature_feedback'>
-      <input type="hidden" value='{{ form.feature_feedback }}' name='feature_feedback'>
-  </div>
-
-</form>
-
-  </body>
 </html>

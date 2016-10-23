@@ -69,19 +69,16 @@ def increase_weight(index):
 def decrease_weight(index):
     clf.coef_[0][index] = clf.coef_[0][index] / 10
 
-
 ###### Uncertainty sampling #####
 def uncertainty_sample(class_proba):
     uncertainty = abs(class_proba - 0.5)
     return uncertainty
-
 
 ### Forms
 class ReviewForm(Form):
     feature_feedback = TextAreaField('',
                                 [validators.DataRequired(),
                                 validators.length(min=3)])
-
 
 #### Flask functions ######
 
@@ -97,7 +94,7 @@ def results():
                                 probability=round(proba*100, 2))
     return render_template('reviewform.html', form=form)
 
-
+# This is called when the user clicks correct or incorrect in the active learning version
 @app.route('/update', methods=['POST'])
 def update_classifier_feedback():
     feedback = request.form['update_classifier']
@@ -112,6 +109,22 @@ def update_classifier_feedback():
     # Update class probabilities and labels for entire test set
     update_class_proba(db2)
     return render_template('thanks.html')
+
+# This is called when the user clicks correct or incorrect on the feature reweighting version
+@app.route('/update-v2', methods=['POST'])
+def update_classifier_feedback_v2():
+    feedback = request.form['update_classifier']
+    article = request.form['uncertain_article']
+    prediction = request.form['prediction']
+    inv_label = {"Defence": 0, "Environment and natural world": 1}
+    y = inv_label[prediction]
+    if feedback == 'Incorrect':
+        y = int(not(y))
+    # Retrain model with uncertain article and new (or same as before) label
+    train_model(article, y)
+    # Update class probabilities and labels for entire test set
+    update_class_proba(db2)
+    return render_template('thank-you.html')
 
 @app.route('/change-weights', methods=['POST'])
 def manually_change_weights():
@@ -130,7 +143,6 @@ def display_article():
     c = conn.cursor()
     cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
-    #items = {predicted_labels:cursor[0], text:cursor[1], class_proba:cursor[2]}
     return render_template('article.html', items=items)
 
 # Need a second version of thanks.html to loop back here
@@ -139,12 +151,10 @@ def display_article_manual_reweighting():
     conn = sqlite3.connect(db2)
     conn.create_function("uncertainty_query", 1, uncertainty_sample)
     c = conn.cursor()
-    cursor = c.execute('SELECT predicted_labels, text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
-    items = [dict(predicted_labels=row[0], text=row[1], class_proba=row[2]) for row in cursor.fetchall()]
+    cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
+    items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
     return render_template('article-with-reweighting.html', items=items, form=form)
 
-
 if __name__ == '__main__':
     app.run(debug=True)
-
