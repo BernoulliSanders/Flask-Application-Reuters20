@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
 </head>
 <body>
-<table style="float:right">
+<table class="table1" style="float:right">
 {% from "_formhelpers.html" import render_field %}
 <tr><th>
  Top 10 weights
@@ -65,7 +65,6 @@
 </form>
 </td></tr>
 </table>
-  </body>
 
 {% for item in items %}
 
@@ -93,6 +92,5 @@
 	  </form>
 </div>
 {% endfor %}
-
-
+  </body>
 </html>

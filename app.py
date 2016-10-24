@@ -74,6 +74,11 @@ def uncertainty_sample(class_proba):
     uncertainty = abs(class_proba - 0.5)
     return uncertainty
 
+def uncertainty_sample_chopped(class_proba):
+    uncertainty = abs(class_proba - 0.5)
+    uncertainty = str(uncertainty)[:4]
+    return uncertainty
+
 ### Forms
 class ReviewForm(Form):
     feature_feedback = TextAreaField('',
@@ -155,6 +160,26 @@ def display_article_manual_reweighting():
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
     return render_template('article-with-reweighting.html', items=items, form=form)
+
+@app.route('/menu')
+def display_headlines():
+    conn = sqlite3.connect(db2)
+    # Could use this function for SVM I think
+    # conn.create_function("ignore_sign", 1, abs)
+    conn.create_function("uncertainty_query", 1, uncertainty_sample_chopped)
+    c = conn.cursor()
+    cursor = c.execute('SELECT Headline, uncertainty_query(class_proba), predicted_labels FROM RCV1_test_X')
+    menu_items = [dict(Headline=row[0], class_proba=row[1], predicted_labels=row[2][:11]) for row in cursor.fetchall()]
+    return render_template('menu.html', items=menu_items)
+
+'''
+@app.route('/menu/<article-id>')
+def display_clicked_article():
+    conn = sqlite3.connect(db2)
+    c = conn.cursor()
+    cursor = c.execute('SELECT Headline, Text FROM RCV1_test_X')
+'''
+
 
 if __name__ == '__main__':
     app.run(debug=True)

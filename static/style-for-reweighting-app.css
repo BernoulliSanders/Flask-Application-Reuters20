@@ -12,15 +12,27 @@ h2 {color:white;  width:600px;  font:"Helvetica Neue";
 
 div {color:white; font:"Helvetica Neue";}
 
-h3 {color:white; width:600px;  font:"Helvetica Neue";}
+h3 {color:white; width:300px;  font:"Helvetica Neue";}
 
-p {color:white; width:600px; font:"Comic Sans MS";}
+p {color:white; width:500px; font:"Comic Sans MS";}
 
-table {width: 300px; align-items:"right";}
+p.ital {font-style: italic; width:200px; background-color: #669999;}
+
+p.strong {font-style: bold; width:300px;}
+
+a {color:white;}
+
+strong.yellow {}
+
+table.table1 {width: 300px; align-items:"right";}
+
+table.table2 {width: 300px; align-items:"left";}
 
 td { color:#ffffb3;
     text-align: left;
 }
+
+td.right {text-align: right;}
 
 th {
     background-color: #669999;
