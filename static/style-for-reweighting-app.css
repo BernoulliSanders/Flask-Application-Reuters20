@@ -1,20 +1,28 @@
-body {font-family: serif; width:1100px; background-color:#505050; text-color:white; font-size: 16px;}
+body {font-family: serif; width:1150px; background-color:#505050; text-color:white; font-size: 16px;}
 
-h1 {color:white;  width:600px;  font:"Helvetica Neue"; 
+h1 {color:white;  width:200px;  font:"Helvetica Neue"; 
     
-    color: white;
 }
 
-h2 {color:white;  width:600px;  font:"Helvetica Neue"; 
+h2 {color:white;  width:300px;  font:"Helvetica Neue"; text-align: center;
     
-    color: white;
+    color: white; float: top; background-color: black; border-radius: 5px;
 }
 
 div {color:white; font:"Helvetica Neue";}
 
-h3 {color:white; width:300px;  font:"Helvetica Neue";}
+.container {
+    float: left, top;
+    margin-left: 330px;
+}
+
+h3 {color:white; width:420px; font:"Helvetica Neue";}
+
+.narrow {width: 420px; float: right;}
 
 p {color:white; width:500px; font:"Comic Sans MS";}
+
+p.narrow {float: right;}
 
 p.ital {font-style: italic; width:200px; background-color: #669999;}
 
@@ -22,11 +30,14 @@ p.strong {font-style: bold; width:300px;}
 
 a {color:white;}
 
-strong.yellow {}
+strong.narrow {}
 
-table.table1 {width: 300px; align-items:"right";}
+table {width: 200px;}
 
-table.table2 {width: 300px; align-items:"left";}
+table.table1 {width: 200px; align-items:"right"; border: solid; border-width: 2px; border-radius: 7px; 
+border-color:white; padding: 3px}
+
+table.table2 {width: 300px; align-items:"left"; margin-top: 3px; float: top}
 
 td { color:#ffffb3;
     text-align: left;
@@ -48,5 +59,7 @@ form {
 input {
 	background-color: #33ff77; color:#464141; border: 2px solid; border-radius: 8px; border-color: #271D1D; 
 }
+
+iframe {width: 310px; position: absolute; height: 100%; border: none;}
 
 .button {padding-top:15px; border:10px}

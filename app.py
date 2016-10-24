@@ -152,6 +152,7 @@ def display_article():
 
 # Need a second version of thanks.html to loop back here
 @app.route('/article-with-reweighting')
+#@app.route('/article-with-reweighting/<article-id>')
 def display_article_manual_reweighting():
     conn = sqlite3.connect(db2)
     conn.create_function("uncertainty_query", 1, uncertainty_sample)

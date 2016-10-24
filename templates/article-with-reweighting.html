@@ -6,57 +6,60 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
 </head>
 <body>
+<!--<h2>Choose article:</h2>-->
+<h2> Choose article:</h2>
+<iframe src="{{ url_for('display_headlines') }}"></iframe>
 <table class="table1" style="float:right">
 {% from "_formhelpers.html" import render_field %}
-<tr><th>
+<tr><th colspan="2">
  Top 10 weights
 </th></tr>
-<tr><td>
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td >
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td>
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td>
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td>
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td>
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td>
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td>
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td>
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td>
+<tr><td colspan="2">
 <label for="weight">Weight</label>
 <input type="range" id="weight" min="10" value="10" max="2000" step="100">
 </td></tr>
-<tr><td></td></tr>
-<tr><th>Would a different word be better?</th></tr>
+<tr><td colspan="2"></td></tr>
+<tr><th colspan="2">Would a different word be better?</th></tr>
 <tr><td>
 <form method=post action="/change-weights">
       <dl>
-  {{ render_field(form.feature_feedback, cols='20', rows='2') }}
+  {{ render_field(form.feature_feedback, cols='15', rows='1') }}
   </dl>
   </td>
   <td>
@@ -67,10 +70,10 @@
 </table>
 
 {% for item in items %}
-
-<h2><strong> {{ item.Headline }}
+<div class="container">
+<h3><strong> {{ item.Headline }}
 </strong>
-</h2>
+</h3>
 <p>
            {{ item.Text }}
     </p>
@@ -81,7 +84,7 @@
 </p>
 
 <p>
-<strong>Prediction margin:</strong> {{ item.class_proba }}
+<strong >Prediction margin:</strong> {{ item.class_proba }}
 </p>
 <div id='button'>
 	  <form action="/update-v2" method="post">
@@ -90,6 +93,7 @@
 		<input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
 		<input type=hidden value='{{ item.text }}' name='uncertain_article'>
 	  </form>
+</div>
 </div>
 {% endfor %}
   </body>
