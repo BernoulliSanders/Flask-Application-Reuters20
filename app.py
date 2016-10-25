@@ -47,12 +47,12 @@ def feedback_count():
 
 # To be called whenever someone clicks they accept the T&C's on the welcome page
 def new_table_active(path):
-    '''conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path)
     c = conn.cursor()
-    c.execute('CREATE TABLE active_learning_num')
+    c.execute("CREATE TABLE active_learning_num (ind INT, indexID INT, Headline TEXT, Text TEXT, prediction INT, predicted labels TEXT, class_proba INT)")
     c.execute('INSERT INTO active_learning_num SELECT * FROM RCV1_test_X;')
     conn.commit()
-    conn.close()'''
+    conn.close()
     return display_article()
 
 
@@ -67,7 +67,8 @@ def update_class_proba(path,count):
     all_rows = cursor.fetchall()
     X = vect.transform(x[0] for x in all_rows)
     new_proba = list(float(z) for z in clf.predict_proba(X)[:, 1])
-    IDs = list(int(zz) for zz in np.arange(2006, 3006, 1))
+    #IDs = list(int(zz) for zz in np.arange(2006, 3006, 1))
+    IDs = list(int(zz) for zz in np.arange(0, 1000, 1))
     new_proba_tuple = list(zip(new_proba,IDs))
     c.executemany('UPDATE RCV1_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
     feedback_count()
@@ -81,6 +82,8 @@ def update_class_proba(path,count):
     c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Defence\' WHERE prediction=0')
     conn.commit()
     conn.close()
+
+
 
 ###### End user feature feedback #######
 # This gives the index location of the weight
