@@ -52,7 +52,7 @@ def feature_f_participant_counter():
     global feature_f_participant_num
     feature_f_participant_num += 1
 
-#### To be called whenever someone clicks they accept the T&C's on the welcome page
+#### To be called whenever someone clicks they accept the T&C's on the welcome page, creating a new table
 # Version 1 for active learning
 def new_table_active(path):
     conn = sqlite3.connect(path)
@@ -81,9 +81,7 @@ def new_table_feature_feedback(path):
 '''This vectorizes all articles, calculates the updated probabilities, 
 updates the class probabilities, and adds a new column for each piece 
 of feedback given by the user with the class probabilities at that point in time'''
-
-# Active learning version
-def update_class_proba(path,count):
+def update_class_proba_active(path,count):
     conn = sqlite3.connect(path)
     c = conn.cursor()
     cursor = c.execute('SELECT text, indexID FROM RCV1_test_X')
@@ -108,7 +106,31 @@ def update_class_proba(path,count):
     conn.commit()
     conn.close()
 
-def add_column
+def update_class_proba_feature(path,count):
+    conn = sqlite3.connect(path)
+    c = conn.cursor()
+    cursor = c.execute('SELECT text, indexID FROM RCV1_test_X')
+    all_rows = cursor.fetchall()
+    X = vect.transform(x[0] for x in all_rows)
+    new_proba = list(float(z) for z in clf.predict_proba(X)[:, 1])
+    IDs = list(int(zz) for zz in np.arange(0, 1000, 1))
+    new_proba_tuple = list(zip(new_proba,IDs))
+    new_class = list(int(xy) for xy in clf.predict(X))
+    new_class_tuple = list(zip(new_class,IDs))
+    # Update values in main table (which holds the articles, headlines and predicted labels)
+    c.executemany('UPDATE RCV1_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
+    c.executemany('UPDATE RCV1_test_X SET prediction=? WHERE indexID=?', new_class_tuple)
+    c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Environment and natural world\' WHERE prediction=1')
+    c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Defence\' WHERE prediction=0')
+    # Add new column to participant tracking table with feedback at t+x 
+    table_name = "feature_feedback_num"+str(feature_f_participant_num)
+    feedback_count()
+    column = "class_proba_t_plus_"+str(count)
+    c.execute('ALTER TABLE '+table_name+' ADD COLUMN '+column+' REAL')
+    c.executemany('UPDATE '+table_name+' SET '+column+'=? WHERE indexID=?', new_proba_tuple)
+    conn.commit()
+    conn.close()
+
 
 ###### End user feature feedback #######
 # This gives the index location of the weight
@@ -157,7 +179,7 @@ def update_classifier_feedback():
     # Retrain model with uncertain article and new (or same as before) label
     train_model(article, y)
     # Update class probabilities and labels for entire test set
-    update_class_proba(db2,count)
+    update_class_proba_active(db2,count)
     return render_template('thanks.html')
 
 # This is called when the user clicks correct or incorrect on the feature reweighting version
@@ -173,7 +195,7 @@ def update_classifier_feedback_v2():
     # Retrain model with uncertain article and new (or same as before) label
     train_model(article, y)
     # Update class probabilities and labels for entire test set
-    update_class_proba(db2,count)
+    update_class_proba_feature(db2,count)
     return render_template('thank-you.html')
 
 @app.route('/change-weights', methods=['POST'])
