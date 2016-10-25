@@ -4,6 +4,7 @@ import pickle
 import sqlite3
 import os
 import numpy as np
+import random
 
 # import HashingVectorizer from local dir
 from vectorizer import vect
@@ -21,22 +22,45 @@ db2 = os.path.join(cur_dir, 'RCV1.sqlite')
 
 ordered_weights_dict = pickle.load(open(os.path.join(cur_dir,'pkl_objects','ordered_weights_dict.pkl'), 'rb'))
 
+# This is used to name new columns in the SQLite database
+count = 0
+
 def classify(document):
     label = {0: 'negative', 1: 'positive'}
     X = vect.transform([document])
     y = clf.predict(X)[0]
     proba = np.max(clf.predict_proba(X))
     return label[y], proba
-
+'''
 def train(document, y):
     X = vect.transform([document])
     clf.partial_fit(X, [y])
-
+'''
 def train_model(document, y):
     X = vect.transform([document])
     clf.partial_fit(X, [y])
 
-def update_class_proba(path):
+def feedback_count():
+    global count
+    count += 1
+
+
+# To be called whenever someone clicks they accept the T&C's on the welcome page
+def new_table_active(path):
+    '''conn = sqlite3.connect(path)
+    c = conn.cursor()
+    c.execute('CREATE TABLE active_learning_num')
+    c.execute('INSERT INTO active_learning_num SELECT * FROM RCV1_test_X;')
+    conn.commit()
+    conn.close()'''
+    return display_article()
+
+
+
+'''This vectorizes all articles, calculates the updated probabilities, 
+updates the class probabilities, and adds a new column for each piece 
+of feedback given by the user with the class probabilities at that point in time'''
+def update_class_proba(path,count):
     conn = sqlite3.connect(path)
     c = conn.cursor()
     cursor = c.execute('SELECT text, indexID FROM RCV1_test_X')
@@ -46,6 +70,10 @@ def update_class_proba(path):
     IDs = list(int(zz) for zz in np.arange(2006, 3006, 1))
     new_proba_tuple = list(zip(new_proba,IDs))
     c.executemany('UPDATE RCV1_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
+    feedback_count()
+    column = "class_proba_t_plus_"+str(count)
+    c.execute('ALTER TABLE RCV1_test_X ADD COLUMN '+column+' REAL')
+    c.executemany('UPDATE RCV1_test_X SET '+column+'=? WHERE indexID=?', new_proba_tuple)
     new_class = list(int(xy) for xy in clf.predict(X))
     new_class_tuple = list(zip(new_class,IDs))
     c.executemany('UPDATE RCV1_test_X SET prediction=? WHERE indexID=?', new_class_tuple)
@@ -74,6 +102,7 @@ def uncertainty_sample(class_proba):
     uncertainty = abs(class_proba - 0.5)
     return uncertainty
 
+# Same as above but truncated for display on the menu
 def uncertainty_sample_chopped(class_proba):
     uncertainty = abs(class_proba - 0.5)
     uncertainty = str(uncertainty)[:4]
@@ -86,7 +115,7 @@ class ReviewForm(Form):
                                 validators.length(min=3)])
 
 #### Flask functions ######
-
+'''
 @app.route('/results', methods=['POST'])
 def results():
     form = ReviewForm(request.form)
@@ -98,6 +127,7 @@ def results():
                                 prediction=y,
                                 probability=round(proba*100, 2))
     return render_template('reviewform.html', form=form)
+'''
 
 # This is called when the user clicks correct or incorrect in the active learning version
 @app.route('/update', methods=['POST'])
@@ -112,7 +142,7 @@ def update_classifier_feedback():
     # Retrain model with uncertain article and new (or same as before) label
     train_model(article, y)
     # Update class probabilities and labels for entire test set
-    update_class_proba(db2)
+    update_class_proba(db2,count)
     return render_template('thanks.html')
 
 # This is called when the user clicks correct or incorrect on the feature reweighting version
@@ -128,7 +158,7 @@ def update_classifier_feedback_v2():
     # Retrain model with uncertain article and new (or same as before) label
     train_model(article, y)
     # Update class probabilities and labels for entire test set
-    update_class_proba(db2)
+    update_class_proba(db2,count)
     return render_template('thank-you.html')
 
 @app.route('/change-weights', methods=['POST'])
@@ -162,6 +192,7 @@ def display_article_manual_reweighting():
     form = ReviewForm(request.form)
     return render_template('article-with-reweighting.html', items=items, form=form)
 
+# Vertical menu used in an iframe on the article-with-reweighting app
 @app.route('/menu')
 def display_headlines():
     conn = sqlite3.connect(db2)
@@ -173,6 +204,16 @@ def display_headlines():
     menu_items = [dict(Headline=row[0], class_proba=row[1], predicted_labels=row[2][:11]) for row in cursor.fetchall()]
     return render_template('menu.html', items=menu_items)
 
+
+# This assigns a user to one or other study at random
+@app.route('/study', methods=['POST'])
+def display_app_at_random():
+    page = random.randrange(0, 2)
+    if page == 0:
+        return new_table_active(db2)
+    else:
+        return display_article_manual_reweighting()
+
 '''
 @app.route('/menu/<article-id>')
 def display_clicked_article():
@@ -180,6 +221,10 @@ def display_clicked_article():
     c = conn.cursor()
     cursor = c.execute('SELECT Headline, Text FROM RCV1_test_X')
 '''
+
+@app.route('/')
+def welcome_page():
+    return render_template('opt-in.html')
 
 
 if __name__ == '__main__':
