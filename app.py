@@ -25,17 +25,17 @@ ordered_weights_dict = pickle.load(open(os.path.join(cur_dir,'pkl_objects','orde
 # This is used to name new columns in the SQLite database
 count = 0
 
+# These are used to count the number of times the study has been started and to give the new tables a unique number
+active_l_participant_num = 0
+feature_f_participant_num = 0
+
 def classify(document):
     label = {0: 'negative', 1: 'positive'}
     X = vect.transform([document])
     y = clf.predict(X)[0]
     proba = np.max(clf.predict_proba(X))
     return label[y], proba
-'''
-def train(document, y):
-    X = vect.transform([document])
-    clf.partial_fit(X, [y])
-'''
+
 def train_model(document, y):
     X = vect.transform([document])
     clf.partial_fit(X, [y])
@@ -44,22 +44,45 @@ def feedback_count():
     global count
     count += 1
 
+def active_l_participant_counter():
+    global active_l_participant_num
+    active_l_participant_num += 1
 
-# To be called whenever someone clicks they accept the T&C's on the welcome page
+def feature_f_participant_counter():
+    global feature_f_participant_num
+    feature_f_participant_num += 1
+
+#### To be called whenever someone clicks they accept the T&C's on the welcome page
+# Version 1 for active learning
 def new_table_active(path):
     conn = sqlite3.connect(path)
     c = conn.cursor()
-    c.execute("CREATE TABLE active_learning_num (ind INT, indexID INT, Headline TEXT, Text TEXT, prediction INT, predicted labels TEXT, class_proba INT)")
-    c.execute('INSERT INTO active_learning_num SELECT * FROM RCV1_test_X;')
+    active_l_participant_counter()
+    table_name = "active_learning_num"+str(active_l_participant_num)
+    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
+    c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
     conn.commit()
     conn.close()
     return display_article()
 
+# Version 2 for feature feedback
+def new_table_feature_feedback(path):
+    conn = sqlite3.connect(path)
+    c = conn.cursor()
+    feature_f_participant_counter()
+    table_name = "feature_feedback_num"+str(feature_f_participant_num)
+    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
+    c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
+    conn.commit()
+    conn.close()
+    return display_article_manual_reweighting()
 
 
 '''This vectorizes all articles, calculates the updated probabilities, 
 updates the class probabilities, and adds a new column for each piece 
 of feedback given by the user with the class probabilities at that point in time'''
+
+# Active learning version
 def update_class_proba(path,count):
     conn = sqlite3.connect(path)
     c = conn.cursor()
@@ -67,23 +90,25 @@ def update_class_proba(path,count):
     all_rows = cursor.fetchall()
     X = vect.transform(x[0] for x in all_rows)
     new_proba = list(float(z) for z in clf.predict_proba(X)[:, 1])
-    #IDs = list(int(zz) for zz in np.arange(2006, 3006, 1))
     IDs = list(int(zz) for zz in np.arange(0, 1000, 1))
     new_proba_tuple = list(zip(new_proba,IDs))
-    c.executemany('UPDATE RCV1_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
-    feedback_count()
-    column = "class_proba_t_plus_"+str(count)
-    c.execute('ALTER TABLE RCV1_test_X ADD COLUMN '+column+' REAL')
-    c.executemany('UPDATE RCV1_test_X SET '+column+'=? WHERE indexID=?', new_proba_tuple)
     new_class = list(int(xy) for xy in clf.predict(X))
     new_class_tuple = list(zip(new_class,IDs))
+    # Update values in main table (which holds the articles, headlines and predicted labels)
+    c.executemany('UPDATE RCV1_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
     c.executemany('UPDATE RCV1_test_X SET prediction=? WHERE indexID=?', new_class_tuple)
     c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Environment and natural world\' WHERE prediction=1')
     c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Defence\' WHERE prediction=0')
+    # Add new column to participant tracking table with feedback at t+x 
+    table_name = "active_learning_num"+str(active_l_participant_num)
+    feedback_count()
+    column = "class_proba_t_plus_"+str(count)
+    c.execute('ALTER TABLE '+table_name+' ADD COLUMN '+column+' REAL')
+    c.executemany('UPDATE '+table_name+' SET '+column+'=? WHERE indexID=?', new_proba_tuple)
     conn.commit()
     conn.close()
 
-
+def add_column
 
 ###### End user feature feedback #######
 # This gives the index location of the weight
@@ -118,19 +143,6 @@ class ReviewForm(Form):
                                 validators.length(min=3)])
 
 #### Flask functions ######
-'''
-@app.route('/results', methods=['POST'])
-def results():
-    form = ReviewForm(request.form)
-    if request.method == 'POST' and form.validate():
-        review = request.form['moviereview']
-        y, proba = classify(review)
-        return render_template('results.html',
-                                content=review,
-                                prediction=y,
-                                probability=round(proba*100, 2))
-    return render_template('reviewform.html', form=form)
-'''
 
 # This is called when the user clicks correct or incorrect in the active learning version
 @app.route('/update', methods=['POST'])
@@ -171,7 +183,7 @@ def manually_change_weights():
     increase_weight(look_up_weight(feedback))
     return render_template('thank-you.html')
 
-# This function uses the uncertainty_query function defined above and uses it in a
+# This displays the active learning application. This function uses the uncertainty_query function defined above and uses it in a
 # SQL SELECT query to display to the user the article which the model is most uncertain about
 # thanks.html leads here
 @app.route('/article')
@@ -179,11 +191,12 @@ def display_article():
     conn = sqlite3.connect(db2)
     conn.create_function("uncertainty_query",1,uncertainty_sample)
     c = conn.cursor()
+    table_name = "active_learning_num"+str(active_l_participant_num)
     cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
     return render_template('article.html', items=items)
 
-# Need a second version of thanks.html to loop back here
+# This displays the feature feedback application
 @app.route('/article-with-reweighting')
 #@app.route('/article-with-reweighting/<article-id>')
 def display_article_manual_reweighting():
@@ -215,7 +228,7 @@ def display_app_at_random():
     if page == 0:
         return new_table_active(db2)
     else:
-        return display_article_manual_reweighting()
+        return new_table_feature_feedback(db2)
 
 '''
 @app.route('/menu/<article-id>')
