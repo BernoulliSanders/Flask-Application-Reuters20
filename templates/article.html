@@ -11,9 +11,6 @@
 </strong>
 </h2>
 <p>
-           {{ item.Text }}
-    </p>
-<p>
 <strong>Predicted topic:  </strong>
 {{ item.predicted_labels }}
 </p>
@@ -21,6 +18,9 @@
 <p>
 <strong>Prediction margin:</strong> {{ item.class_proba }}
 </p>
+<p>
+           {{ item.Text }}
+    </p>
 <div id='button'>
 	  <form action="/update" method="post">
 	    <input type=submit value='Correct' name='update_classifier'>
