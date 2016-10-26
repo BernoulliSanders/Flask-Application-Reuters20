@@ -1,20 +1,16 @@
-body {font-family: serif; width:1100px; background-color:#505050; text-color:white; font-size: 16px}
+body {font-family: serif; width:1100px; background-color:white; color:black; font-size: 16px}
 
-h1 {color:white;  width:600px;  font:"Helvetica Neue"; 
-    
-    color: white;
+h1 {width:600px;  font:"Helvetica Neue";
 }
 
-h2 {color:white;  width:600px;  font:"Helvetica Neue"; 
-    
-    color: white;
+h2 { width:600px;  font:"Helvetica Neue";     
 }
 
 div {color:white; font:"Helvetica Neue"}
 
-h3 {color:white; width:700px; font:"Helvetica Neue"}
+h3 {width:700px; font:"Helvetica Neue"}
 
-p {color:white; width:700px; font:"Comic Sans MS"}
+p {width:700px; font:"Comic Sans MS"}
 
 input {
 	background-color: #33ff77; color:#464141; border: 2px solid; border-radius: 8px; border-color: #271D1D; 
