@@ -5,14 +5,17 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
   </head>
   <body>
-
+<iframe src="{{ url_for('display_headlines') }}" ></iframe>
+<div class="container">
 <h3>Thank you for your feedback!</h3>
-
+<p>Please choose another article from the menu to the left.</p>
+</div>
+<!--
 <div id='button'>
 	  <form action="/article-with-reweighting">
 	    <input type=submit value='View the next article'>
 	  </form>
 </div>
-
+>-->
   </body>
 </html>

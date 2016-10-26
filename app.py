@@ -5,6 +5,7 @@ import sqlite3
 import os
 import numpy as np
 import random
+import heapq
 
 # import HashingVectorizer from local dir
 from vectorizer import vect
@@ -75,7 +76,8 @@ def new_table_feature_feedback(path):
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
     conn.commit()
     conn.close()
-    return display_article_manual_reweighting()
+    # Return random article as the first one to be shown to the user. This function is only called once.
+    return display_article_manual_reweighting(random.randrange(0, 1000))
 
 
 '''This vectorizes all articles, calculates the updated probabilities, 
@@ -131,6 +133,14 @@ def update_class_proba_feature(path,count):
     conn.commit()
     conn.close()
 
+# This is to store the actual instance feedback given by a user
+'''
+def track_instance_feedback(y):
+    feedback = {"incorrect": 0, "correct": 1}
+    conn = sqlite3.connect(db2)
+    c = conn.cursor()
+    c.execute('INSERT feedback INTO ???? WHERE ?????')
+'''
 
 ###### End user feature feedback #######
 # This gives the index location of the weight
@@ -146,7 +156,12 @@ def increase_weight(index):
 
 def decrease_weight(index):
     clf.coef_[0][index] = clf.coef_[0][index] / 10
-
+'''
+def look_up_top_10_weights():
+    top10 = []
+    clf.coef_[0].sort(0:10)
+    return heapq.nlargest(10, (clf.coef_[0]))
+'''
 ###### Uncertainty sampling #####
 def uncertainty_sample(class_proba):
     uncertainty = abs(class_proba - 0.5)
@@ -174,6 +189,7 @@ def update_classifier_feedback():
     prediction = request.form['prediction']
     inv_label = {"Defence": 0, "Environment and natural world": 1}
     y = inv_label[prediction]
+    # track_instance_feedback(y)
     if feedback == 'Incorrect':
         y = int(not(y))
     # Retrain model with uncertain article and new (or same as before) label
@@ -190,6 +206,7 @@ def update_classifier_feedback_v2():
     prediction = request.form['prediction']
     inv_label = {"Defence": 0, "Environment and natural world": 1}
     y = inv_label[prediction]
+    # track_instance_feedback(y)
     if feedback == 'Incorrect':
         y = int(not(y))
     # Retrain model with uncertain article and new (or same as before) label
@@ -219,16 +236,18 @@ def display_article():
     return render_template('article.html', items=items)
 
 # This displays the feature feedback application
-@app.route('/article-with-reweighting')
-#@app.route('/article-with-reweighting/<article-id>')
-def display_article_manual_reweighting():
+#@app.route('/article-with-reweighting')
+@app.route('/article-with-reweighting/<articleid>')
+def display_article_manual_reweighting(articleid):
     conn = sqlite3.connect(db2)
     conn.create_function("uncertainty_query", 1, uncertainty_sample)
     c = conn.cursor()
-    cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
-    items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
+    # cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
+    # items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
+    cursor = c.execute('SELECT predicted_labels, Headline, Text, uncertainty_query(class_proba), indexID FROM RCV1_test_X WHERE indexID=?', (articleid,))
+    items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
-    return render_template('article-with-reweighting.html', items=items, form=form)
+    return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid)
 
 # Vertical menu used in an iframe on the article-with-reweighting app
 @app.route('/menu')
@@ -238,10 +257,9 @@ def display_headlines():
     # conn.create_function("ignore_sign", 1, abs)
     conn.create_function("uncertainty_query", 1, uncertainty_sample_chopped)
     c = conn.cursor()
-    cursor = c.execute('SELECT Headline, uncertainty_query(class_proba), predicted_labels FROM RCV1_test_X')
-    menu_items = [dict(Headline=row[0], class_proba=row[1], predicted_labels=row[2][:11]) for row in cursor.fetchall()]
+    cursor = c.execute('SELECT Headline, uncertainty_query(class_proba), predicted_labels, indexID FROM RCV1_test_X')
+    menu_items = [dict(Headline=row[0], class_proba=row[1], predicted_labels=row[2][:11], indexID=row[3]) for row in cursor.fetchall()]
     return render_template('menu.html', items=menu_items)
-
 
 # This assigns a user to one or other study at random
 @app.route('/study', methods=['POST'])
