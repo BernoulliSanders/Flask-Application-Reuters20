@@ -6,9 +6,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+
+  <table class="table1" style="float:right">
+  <tr><th>Defence</th></tr>
+  <tr><td><p class="narrow">The first possible class is about....</p> </td></tr>
+  <tr><th>Environment</th></tr>
+  <tr><td><p class="narrow">The second possible class is about....</p> </td></tr>  
+  </table>  
+
+<div>
 {% for item in items %}
-<h2><strong> {{ item.Headline }}
-</strong>
+<h2 class="wide"> {{ item.Headline }}
 </h2>
 <p>
 <strong>Predicted topic:  </strong>
@@ -30,5 +38,7 @@
 	  </form>
 </div>
 {% endfor %}
+</div>
+
   </body>
 </html>

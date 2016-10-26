@@ -78,6 +78,7 @@
 <strong>Predicted topic:  </strong>
 {{ item.predicted_labels }}
 </p>
+
 <p>
 <strong >Prediction margin:</strong> {{ item.class_proba }}
 </p>
@@ -86,12 +87,12 @@
     </p>
 
 <div id='button'>
-	  <form action="/update-v2" method="post">
-	    <input type=submit value='Correct' name='update_classifier'>
-		<input type=submit value='Incorrect' name='update_classifier'>
-		<input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
-		<input type=hidden value='{{ item.text }}' name='uncertain_article'>
-	  </form>
+    <form action="/update-v2" method="post">
+      <input type=submit value='Correct' name='update_classifier'>
+    <input type=submit value='Incorrect' name='update_classifier'>
+    <input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
+    <input type=hidden value='{{ item.text }}' name='uncertain_article'>
+    </form>
 </div>
 </div>
 {% endfor %}

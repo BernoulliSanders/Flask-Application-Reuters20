@@ -1,19 +1,41 @@
-body {font-family: serif; width:1100px; background-color:white; color:black; font-size: 16px}
+body {font-family: serif; width:1050px; background-color:white; color:black; font-size: 16px}
 
 h1 {width:600px;  font:"Helvetica Neue";
 }
 
-h2 { width:600px;  font:"Helvetica Neue";     
+h2.wide { width:600px;  font:"Helvetica Neue";     
 }
 
-div {color:white; font:"Helvetica Neue"}
+div {font:"Helvetica Neue"}
 
-h3 {width:700px; font:"Helvetica Neue"}
+h3 {width:700px; font:"Helvetica Neue";}
 
 p {width:700px; font:"Comic Sans MS"}
+
+p.narrow {width:200px; font:"Comic Sans MS"}
 
 input {
 	background-color: #33ff77; color:#464141; border: 2px solid; border-radius: 8px; border-color: #271D1D; 
 }
 
 .button {padding-top:20px; border:10px}
+
+table {width: 200px;}
+
+table.table1 {background-color:#505050; align-items:right; float:top,right; border: solid; border-width: 2px; border-radius: 10px; 
+border-color:white; padding: 3px; vertical-align:top;}
+
+td { color:#ffffb3;
+    text-align: left;
+}
+
+td.right {text-align: right;}
+
+th {
+    background-color: #669999;
+    color: white;
+    border-top-right-radius: 4px;
+  border-top-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
