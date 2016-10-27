@@ -6,7 +6,7 @@ import os
 import numpy as np
 import random
 import heapq
-
+from operator import itemgetter
 # import HashingVectorizer from local dir
 from vectorizer import vect
 
@@ -16,7 +16,7 @@ cur_dir = os.path.dirname(__file__)
 # Load classifier
 clf = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
-                 'RCV1_log_reg_classifier.pkl'), 'rb'))
+                 'RCV1_log_reg_GDEF_GENV.pkl'), 'rb'))
 
 # Read in unlabelled pool of 1000 articles from RCV1
 db2 = os.path.join(cur_dir, 'RCV1.sqlite')
@@ -143,6 +143,8 @@ def track_instance_feedback(y):
 '''
 
 ###### End user feature feedback #######
+
+##### Functions for free text form ######
 # This gives the index location of the weight
 def look_up_weight(word):
     return list(ordered_weights_dict.keys()).index(word)
@@ -156,12 +158,19 @@ def increase_weight(index):
 
 def decrease_weight(index):
     clf.coef_[0][index] = clf.coef_[0][index] / 10
+
+
+###### Functions for sliders ######    
 '''
 def look_up_top_10_weights():
     top10 = []
-    clf.coef_[0].sort(0:10)
     return heapq.nlargest(10, (clf.coef_[0]))
 '''
+
+
+
+
+
 ###### Uncertainty sampling #####
 def uncertainty_sample(class_proba):
     uncertainty = abs(class_proba - 0.5)
@@ -217,6 +226,7 @@ def update_classifier_feedback_v2():
 
 @app.route('/change-weights', methods=['POST'])
 def manually_change_weights():
+    # This pulls the contents from the feature_feedback form in article-with-reweighting
     feedback = request.form['feature_feedback']
     # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
     increase_weight(look_up_weight(feedback))
@@ -247,7 +257,8 @@ def display_article_manual_reweighting(articleid):
     cursor = c.execute('SELECT predicted_labels, Headline, Text, uncertainty_query(class_proba), indexID FROM RCV1_test_X WHERE indexID=?', (articleid,))
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
-    return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid)
+    topten = sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[0:10]
+    return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten)
 
 # Vertical menu used in an iframe on the article-with-reweighting app
 @app.route('/menu')
