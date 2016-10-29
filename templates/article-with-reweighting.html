@@ -14,18 +14,23 @@
 <tr><th colspan="2">
  Top 10 weights
 </th></tr>
-<form method=post action="/change-weights">
+<form method=post action="">
 {% for key, value in topten.items() %}
 <tr><td colspan="2">
 <label for="weight">{{ key }} {{ value }}</label>
-<input type="range" id="weight_1" min="0" value="" max="1000" step="10" defaultValue="{{ value }}" oninput="rangeValueDisplay.value=range.value">
+<!--<input type="range" id="weight_1" min="0" max="1000" step="10" defaultValue="{{ value }}" oninput="myFunction(this.value)">-->
+<input name="weight_1" type="range" min="0" max="1000" value="{{ value }}" step="10" defaultValue="{{ value }}" oninput="myFunction(this.value)">
+<label id="weight" for="weight"></label>
 <input type="hidden" value="{{ value }}" name="new_weight">
-<script>
+<!--<script>
 function myFunction() {
-    document.getElementById("weight_1").value = "75";
+    var weight_1 = document.getElementById("weight_1").value;
 }
-</script>
+</script>-->
+
+
 </td></tr>{% endfor %}</form>
+
 <!--
 <tr><td colspan="2">
 <label for="weight">Weight</label>
@@ -106,6 +111,11 @@ function myFunction() {
 </div>
 {% endfor %}
 
+<script>
+function myFunction(val) {
+    document.getElementById("weight").innerHTML = val;
+}
+</script>
 
   </body>
 </html>
