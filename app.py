@@ -149,7 +149,8 @@ def track_instance_feedback(y):
 def look_up_weight(word):
     return list(ordered_weights_dict.keys()).index(word)
 
-# This takes the index location of the weight and updates it
+# This takes the index location of the weight and updates it.
+# So far this only updates the weight in the classifier coefficient. I will need to update it in the ordered weights dict too.
 def increase_weight(index):
     if clf.coef_[0][index] !=0:
         clf.coef_[0][index] = clf.coef_[0][index] * 10
@@ -158,6 +159,13 @@ def increase_weight(index):
 
 def decrease_weight(index):
     clf.coef_[0][index] = clf.coef_[0][index] / 10
+
+# This updates the ordered weights dict
+def increase_weight_in_weight_dict(word):
+    if ordered_weights_dict[word] !=0:
+        ordered_weights_dict[word] = ordered_weights_dict[word] * 10
+    else:
+        ordered_weights_dict[word] = 1
 
 
 ###### Functions for sliders ######    
@@ -229,7 +237,8 @@ def manually_change_weights():
     # This pulls the contents from the feature_feedback form in article-with-reweighting
     feedback = request.form['feature_feedback']
     # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
-    increase_weight(look_up_weight(feedback))
+    increase_weight_in_weight_dict(feedback)
+    increase_weight(look_up_weight(feedback)) 
     return render_template('thank-you.html')
 
 # This displays the active learning application. This function uses the uncertainty_query function defined above and uses it in a
@@ -257,7 +266,8 @@ def display_article_manual_reweighting(articleid):
     cursor = c.execute('SELECT predicted_labels, Headline, Text, uncertainty_query(class_proba), indexID FROM RCV1_test_X WHERE indexID=?', (articleid,))
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
-    topten = sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[0:10]
+    topten = dict(sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[0:10])
+    #topten_dict = dict(topten_keys=topten.keys(), topten_values=topten.values())
     return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten)
 
 # Vertical menu used in an iframe on the article-with-reweighting app
