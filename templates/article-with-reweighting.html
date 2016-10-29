@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Review</title>
+    <title>RCV1 Article</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
 </head>
 <body>
@@ -18,15 +18,18 @@
 {% for key, value in topten.items() %}
 <tr><td colspan="2">
 <label for="weight">{{ key }} {{ value }}</label>
-<!--<input type="range" id="weight_1" min="0" max="1000" step="10" defaultValue="{{ value }}" oninput="myFunction(this.value)">-->
-<input name="weight_1" type="range" min="0" max="1000" value="{{ value }}" step="10" defaultValue="{{ value }}" oninput="myFunction(this.value)">
-<label id="weight" for="weight"></label>
-<input type="hidden" value="{{ value }}" name="new_weight">
-<!--<script>
-function myFunction() {
-    var weight_1 = document.getElementById("weight_1").value;
-}
-</script>-->
+</td></tr>
+<tr><td>
+<form action="/change-weights_by_percentage" method=post >
+      <dl>
+  {{ render_field(form.feature_feedback, cols='5', rows='1') }}
+  </dl>
+  </td>
+  <td>
+      <input type="hidden" value='{{ form.feature_feedback }}' name='percentage_feature_feedback'>
+      <input type=hidden value='{{ key }}' name='feature'>
+      <input type=submit value='Change Weight' name='submit_percentage_feature_feedback'>
+</form>
 
 
 </td></tr>{% endfor %}</form>
@@ -111,11 +114,6 @@ function myFunction() {
 </div>
 {% endfor %}
 
-<script>
-function myFunction(val) {
-    document.getElementById("weight").innerHTML = val;
-}
-</script>
 
   </body>
 </html>

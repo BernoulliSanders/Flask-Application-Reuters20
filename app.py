@@ -167,6 +167,10 @@ def increase_weight_in_weight_dict(word):
     else:
         ordered_weights_dict[word] = 1
 
+def increase_weight_in_weights_dict_perc(word, percentage):
+    ordered_weights_dict[word] = ordered_weights_dict[word] + ordered_weights_dict[word] * int(percentage)
+
+
 
 ###### Functions for sliders ######    
 '''
@@ -174,10 +178,6 @@ def look_up_top_10_weights():
     top10 = []
     return heapq.nlargest(10, (clf.coef_[0]))
 '''
-
-
-
-
 
 ###### Uncertainty sampling #####
 def uncertainty_sample(class_proba):
@@ -194,7 +194,12 @@ def uncertainty_sample_chopped(class_proba):
 class ReviewForm(Form):
     feature_feedback = TextAreaField('',
                                 [validators.DataRequired(),
-                                validators.length(min=3)])
+                                validators.length(min=1)])
+
+class FeedbackForm(Form):    
+    submit_percentage_feature_feedback = TextAreaField('10',
+                                [validators.DataRequired(),
+                                validators.length(min=1)])
 
 #### Flask functions ######
 
@@ -234,6 +239,16 @@ def update_classifier_feedback_v2():
 
 @app.route('/change-weights', methods=['POST'])
 def manually_change_weights():
+    # This pulls the contents from the feature_feedback form in article-with-reweighting
+    feedback = request.form['feature_feedback']
+    # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
+    increase_weight_in_weight_dict(feedback)
+    increase_weight(look_up_weight(feedback)) 
+    return render_template('thank-you.html')
+
+#This changes the weight by the percentage in the form
+@app.route('/change-weights_by_percentage', methods=['POST'])
+def manually_change_weights_by_percentage():
     # This pulls the contents from the feature_feedback form in article-with-reweighting
     feedback = request.form['feature_feedback']
     # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
