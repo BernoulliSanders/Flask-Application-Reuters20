@@ -161,14 +161,14 @@ def decrease_weight(index):
     clf.coef_[0][index] = clf.coef_[0][index] / 10
 
 # This updates the ordered weights dict
-def increase_weight_in_weight_dict(word):
-    if ordered_weights_dict[word] !=0:
-        ordered_weights_dict[word] = ordered_weights_dict[word] * 10
-    else:
-        ordered_weights_dict[word] = 1
-
 def increase_weight_in_weights_dict_perc(word, percentage):
-    ordered_weights_dict[word] = ordered_weights_dict[word] + ordered_weights_dict[word] * int(percentage)
+    percentage = int(percentage)
+    if ordered_weights_dict[word] !=0:
+        ordered_weights_dict[word] = ordered_weights_dict[word] + ordered_weights_dict[word] * (percentage/100)
+    elif percentage > 0:
+        ordered_weights_dict[word] = 10
+    else:
+        ordered_weights_dict[word] = -10
 
 
 
@@ -235,6 +235,7 @@ def update_classifier_feedback_v2():
     update_class_proba_feature(db2,count)
     return render_template('thank-you.html')
 
+'''
 @app.route('/change-weights', methods=['POST'])
 def manually_change_weights():
     # This pulls the contents from the feature_feedback form in article-with-reweighting
@@ -243,16 +244,19 @@ def manually_change_weights():
     increase_weight_in_weight_dict(feedback)
     increase_weight(look_up_weight(feedback)) 
     return render_template('thank-you.html')
-
+'''
 
 #This changes the weight by the percentage in the form, then returns the same article after the feedback is submitted
 @app.route('/change_weights_by_percentage', methods=['POST'])
 def manually_change_weights_by_percentage():
     # This pulls the contents from the feature_feedback form in article-with-reweighting
     feedback = request.form['feature_feedback']
+    percentage = request.form['submit_percentage_feature_feedback']
     # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
     articleid = request.form['articleid']
-    increase_weight_in_weight_dict(feedback)
+    # Increase weight in ordered dict
+    increase_weight_in_weights_dict_perc(feedback,percentage)
+    # Increase weight in actual classifier
     increase_weight(look_up_weight(feedback))
     return display_article_manual_reweighting(articleid)
 

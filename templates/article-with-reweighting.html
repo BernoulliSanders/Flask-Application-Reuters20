@@ -12,7 +12,7 @@
 <table class="table1" style="float:right">
 {% from "_formhelpers.html" import render_field %}
 <tr><th colspan="2">
- Why was this predicted as being in {% for item in items %} {{ item.predicted_labels }} {% endfor %} ?
+ Why was this article predicted as being about {% for item in items %} {{ item.predicted_labels }}{% endfor %}?
  </br>
  Top 10 words from this article:
 </th></tr>
@@ -106,7 +106,5 @@
 </div>
 </div>
 {% endfor %}
-<p> {{ articleid }}</p>
-
   </body>
 </html>
