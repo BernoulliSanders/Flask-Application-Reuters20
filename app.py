@@ -194,10 +194,8 @@ def uncertainty_sample_chopped(class_proba):
 class ReviewForm(Form):
     feature_feedback = TextAreaField('',
                                 [validators.DataRequired(),
-                                validators.length(min=1)])
-
-class FeedbackForm(Form):    
-    submit_percentage_feature_feedback = TextAreaField('10',
+                                validators.length(min=1)])   
+    submit_percentage_feature_feedback = TextAreaField('',
                                 [validators.DataRequired(),
                                 validators.length(min=1)])
 
@@ -246,15 +244,18 @@ def manually_change_weights():
     increase_weight(look_up_weight(feedback)) 
     return render_template('thank-you.html')
 
-#This changes the weight by the percentage in the form
-@app.route('/change-weights_by_percentage', methods=['POST'])
+
+#This changes the weight by the percentage in the form, then returns the same article after the feedback is submitted
+@app.route('/change_weights_by_percentage', methods=['POST'])
 def manually_change_weights_by_percentage():
     # This pulls the contents from the feature_feedback form in article-with-reweighting
     feedback = request.form['feature_feedback']
     # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
+    articleid = request.form['articleid']
     increase_weight_in_weight_dict(feedback)
-    increase_weight(look_up_weight(feedback)) 
-    return render_template('thank-you.html')
+    increase_weight(look_up_weight(feedback))
+    return display_article_manual_reweighting(articleid)
+
 
 # This displays the active learning application. This function uses the uncertainty_query function defined above and uses it in a
 # SQL SELECT query to display to the user the article which the model is most uncertain about
