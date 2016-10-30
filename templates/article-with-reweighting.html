@@ -101,7 +101,9 @@
       <input type=submit value='Correct' name='update_classifier'>
     <input type=submit value='Incorrect' name='update_classifier'>
     <input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
-    <input type=hidden value='{{ item.text }}' name='uncertain_article'>
+    <input type=hidden value='{{ item.Text }}' name='uncertain_article'>
+    <input type="hidden" value=" {{ item.Headline }} " name="article_headline">
+    <input type="hidden" value="{{ articleid }}" name="articleid">
     </form>
 </div>
 </div>

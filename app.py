@@ -41,6 +41,7 @@ def train_model(document, y):
     X = vect.transform([document])
     clf.partial_fit(X, [y])
 
+
 def feedback_count():
     global count
     count += 1
@@ -78,6 +79,13 @@ def new_table_feature_feedback(path):
     conn.close()
     # Return random article as the first one to be shown to the user. This function is only called once.
     return display_article_manual_reweighting(random.randrange(0, 1000))
+
+def add_to_training_set(indexID, headline, text, label):
+    conn = sqlite3.connect('RCV1_train.sqlite')
+    c = conn.cursor()
+    c.execute('INSERT INTO RCV1_training_set VALUES (?, ?, ?, ?)', (indexID, headline, text, label))
+    conn.commit()
+    conn.close()
 
 
 '''This vectorizes all articles, calculates the updated probabilities, 
@@ -223,12 +231,16 @@ def update_classifier_feedback():
 def update_classifier_feedback_v2():
     feedback = request.form['update_classifier']
     article = request.form['uncertain_article']
+    headline = request.form['article_headline']
     prediction = request.form['prediction']
+    articleid = request.form['articleid']
     inv_label = {"Defence": 0, "Environment and natural world": 1}
     y = inv_label[prediction]
     # track_instance_feedback(y)
     if feedback == 'Incorrect':
         y = int(not(y))
+    # Add new article to training set
+    add_to_training_set(articleid,headline,article,y)
     # Retrain model with uncertain article and new (or same as before) label
     train_model(article, y)
     # Update class probabilities and labels for entire test set
@@ -286,7 +298,10 @@ def display_article_manual_reweighting(articleid):
     cursor = c.execute('SELECT predicted_labels, Headline, Text, uncertainty_query(class_proba), indexID FROM RCV1_test_X WHERE indexID=?', (articleid,))
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
+    #if items[0] == 'Defence':
     topten = dict(sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[0:10])
+    '''else:
+        topten = dict(sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[-10:])'''
     #topten_dict = dict(topten_keys=topten.keys(), topten_values=topten.values())
     return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten)
 
