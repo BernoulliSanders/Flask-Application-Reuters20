@@ -22,6 +22,6 @@ vect = HashingVectorizer(decode_error='ignore',
                          n_features=2**16,
                          preprocessor=None,
                          tokenizer=tokenizer)
-'''
-bow_vect = CountVectorizer(min_df=1, tokenizer=tokenizer)
-'''
+
+#bow_vect = CountVectorizer(min_df=1, tokenizer=tokenizer)
+

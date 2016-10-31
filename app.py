@@ -59,10 +59,16 @@ def train_model_v2():
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
     X = pd.read_sql("SELECT Headline, Text FROM RCV1_training_set;",conn)
-    X = bow_vect.fit_transform(X['Headline'], X['Text'])
+    # Update this later to get the headline back in - fit transform wasn't working with two parameters
+    X = bow_vect.fit_transform(X['Text'])
     y = pd.read_sql("SELECT label FROM RCV1_training_set;",conn)
     clf2.fit(X, y.values.ravel())
     conn.close()
+    dest = os.path.join('pkl_objects')
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+    pickle.dump(bow_vect,open(os.path.join(dest, 'BOW_vect.pkl'), 'wb'), protocol=4)
+    pickle.dump(clf2,open(os.path.join(dest, 'log_reg_BOW.pkl'), 'wb'), protocol=4)
 
 
 def feedback_count():
@@ -328,11 +334,6 @@ def display_article_manual_reweighting(articleid):
     # Words aren't changing, but coefficients are.
     weight_coef_dict = dict(zip(bow_vect.get_feature_names(), clf2.coef_[0]))
     topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = True)[0:10])
-    coefficients = clf2.coef_[0]
-    dest = os.path.join('Flask-Application-Reuters20', 'pkl_objects')
-    if not os.path.exists(dest):
-        os.makedirs(dest)
-    pickle.dump(coefficients,open(os.path.join(dest, 'coefficients.pkl'), 'wb'), protocol=4)
     #if items[0] == 'Defence':
     # topten = dict(sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[0:10])
     '''else:
