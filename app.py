@@ -9,7 +9,7 @@ import random
 import heapq
 from operator import itemgetter
 # import HashingVectorizer from local dir
-from vectorizer import vect, bow_vect
+from vectorizer import vect
 
 app = Flask(__name__)
 
@@ -19,9 +19,15 @@ clf = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
                  'RCV1_log_reg_GDEF_GENV.pkl'), 'rb'))
 
+# Logistic regression with BOW representation of features for feature reweighting approach.
+# I need to make both of these variables stateful
 clf2 = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
                  'log_reg_BOW.pkl'), 'rb'))
+
+bow_vect = pickle.load(open(os.path.join(cur_dir,
+                 'pkl_objects',
+                 'BOW_vect.pkl'), 'rb'))
 
 # Read in unlabelled pool of 1000 articles from RCV1
 db2 = os.path.join(cur_dir, 'RCV1.sqlite')
@@ -319,8 +325,16 @@ def display_article_manual_reweighting(articleid):
     cursor = c.execute('SELECT predicted_labels, Headline, Text, uncertainty_query(class_proba), indexID FROM RCV1_test_X WHERE indexID=?', (articleid,))
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
+    # Words aren't changing, but coefficients are.
+    weight_coef_dict = dict(zip(bow_vect.get_feature_names(), clf2.coef_[0]))
+    topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = True)[0:10])
+    coefficients = clf2.coef_[0]
+    dest = os.path.join('Flask-Application-Reuters20', 'pkl_objects')
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+    pickle.dump(coefficients,open(os.path.join(dest, 'coefficients.pkl'), 'wb'), protocol=4)
     #if items[0] == 'Defence':
-    topten = dict(sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[0:10])
+    # topten = dict(sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[0:10])
     '''else:
         topten = dict(sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[-10:])'''
     #topten_dict = dict(topten_keys=topten.keys(), topten_values=topten.values())
