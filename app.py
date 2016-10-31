@@ -4,19 +4,24 @@ import pickle
 import sqlite3
 import os
 import numpy as np
+import pandas as pd
 import random
 import heapq
 from operator import itemgetter
 # import HashingVectorizer from local dir
-from vectorizer import vect
+from vectorizer import vect, bow_vect
 
 app = Flask(__name__)
 
 cur_dir = os.path.dirname(__file__)
-# Load classifier
+# Load classifier for active learning (uses hashing vectorizer)
 clf = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
                  'RCV1_log_reg_GDEF_GENV.pkl'), 'rb'))
+
+clf2 = pickle.load(open(os.path.join(cur_dir,
+                 'pkl_objects',
+                 'log_reg_BOW.pkl'), 'rb'))
 
 # Read in unlabelled pool of 1000 articles from RCV1
 db2 = os.path.join(cur_dir, 'RCV1.sqlite')
@@ -29,17 +34,29 @@ count = 0
 # These are used to count the number of times the study has been started and to give the new tables a unique number
 active_l_participant_num = 0
 feature_f_participant_num = 0
-
+'''
 def classify(document):
     label = {0: 'negative', 1: 'positive'}
     X = vect.transform([document])
     y = clf.predict(X)[0]
     proba = np.max(clf.predict_proba(X))
     return label[y], proba
+'''
 
+# Need to update to include headline
 def train_model(document, y):
     X = vect.transform([document])
     clf.partial_fit(X, [y])
+
+# To be used for feature reweighting approach (feature matrix is bag of words so that individual words can be reweighted)
+def train_model_v2():
+    conn = sqlite3.connect('RCV1_train.sqlite')
+    c = conn.cursor()
+    X = pd.read_sql("SELECT Headline, Text FROM RCV1_training_set;",conn)
+    X = bow_vect.fit_transform(X['Headline'], X['Text'])
+    y = pd.read_sql("SELECT label FROM RCV1_training_set;",conn)
+    clf2.fit(X, y.values.ravel())
+    conn.close()
 
 
 def feedback_count():
@@ -97,9 +114,11 @@ def update_class_proba_active(path,count):
     cursor = c.execute('SELECT text, indexID FROM RCV1_test_X')
     all_rows = cursor.fetchall()
     X = vect.transform(x[0] for x in all_rows)
+    # Calculate new class probabilities
     new_proba = list(float(z) for z in clf.predict_proba(X)[:, 1])
     IDs = list(int(zz) for zz in np.arange(0, 1000, 1))
     new_proba_tuple = list(zip(new_proba,IDs))
+    # Update predicted classes for unlabelled pool
     new_class = list(int(xy) for xy in clf.predict(X))
     new_class_tuple = list(zip(new_class,IDs))
     # Update values in main table (which holds the articles, headlines and predicted labels)
@@ -121,11 +140,11 @@ def update_class_proba_feature(path,count):
     c = conn.cursor()
     cursor = c.execute('SELECT text, indexID FROM RCV1_test_X')
     all_rows = cursor.fetchall()
-    X = vect.transform(x[0] for x in all_rows)
-    new_proba = list(float(z) for z in clf.predict_proba(X)[:, 1])
+    X = bow_vect.transform(x[0] for x in all_rows)
+    new_proba = list(round(float(z),3) for z in clf2.predict_proba(X)[:, 1])
     IDs = list(int(zz) for zz in np.arange(0, 1000, 1))
     new_proba_tuple = list(zip(new_proba,IDs))
-    new_class = list(int(xy) for xy in clf.predict(X))
+    new_class = list(int(xy) for xy in clf2.predict(X))
     new_class_tuple = list(zip(new_class,IDs))
     # Update values in main table (which holds the articles, headlines and predicted labels)
     c.executemany('UPDATE RCV1_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
@@ -159,6 +178,7 @@ def look_up_weight(word):
 
 # This takes the index location of the weight and updates it.
 # So far this only updates the weight in the classifier coefficient. I will need to update it in the ordered weights dict too.
+'''
 def increase_weight(index):
     if clf.coef_[0][index] !=0:
         clf.coef_[0][index] = clf.coef_[0][index] * 10
@@ -167,6 +187,7 @@ def increase_weight(index):
 
 def decrease_weight(index):
     clf.coef_[0][index] = clf.coef_[0][index] / 10
+'''
 
 # This updates the ordered weights dict
 def increase_weight_in_weights_dict_perc(word, percentage):
@@ -220,7 +241,7 @@ def update_classifier_feedback():
     # track_instance_feedback(y)
     if feedback == 'Incorrect':
         y = int(not(y))
-    # Retrain model with uncertain article and new (or same as before) label
+    # Retrain model with uncertain article and new (or same as before) label - should really update this to incorporate the headline too.
     train_model(article, y)
     # Update class probabilities and labels for entire test set
     update_class_proba_active(db2,count)
@@ -239,10 +260,10 @@ def update_classifier_feedback_v2():
     # track_instance_feedback(y)
     if feedback == 'Incorrect':
         y = int(not(y))
-    # Add new article to training set
+    # Add newly labelled article to training set
     add_to_training_set(articleid,headline,article,y)
     # Retrain model with uncertain article and new (or same as before) label
-    train_model(article, y)
+    train_model_v2()
     # Update class probabilities and labels for entire test set
     update_class_proba_feature(db2,count)
     return render_template('thank-you.html')
