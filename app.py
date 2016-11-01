@@ -201,6 +201,13 @@ def decrease_weight(index):
     clf.coef_[0][index] = clf.coef_[0][index] / 10
 '''
 
+def change_weight(word, percentage):
+    percentage = int(percentage)
+    index = bow_vect.vocabulary_.get(word)
+    if index != None:
+        clf2.coef_[0][index] = clf2.coef_[0][index] + clf2.coef_[0][index] * (percentage/100)
+ 
+
 # This updates the ordered weights dict
 def increase_weight_in_weights_dict_perc(word, percentage):
     percentage = int(percentage)
@@ -299,10 +306,11 @@ def manually_change_weights_by_percentage():
     percentage = request.form['submit_percentage_feature_feedback']
     # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
     articleid = request.form['articleid']
+    change_weight(feedback, percentage)
     # Increase weight in ordered dict
-    increase_weight_in_weights_dict_perc(feedback,percentage)
+    # increase_weight_in_weights_dict_perc(feedback,percentage)
     # Increase weight in actual classifier
-    increase_weight(look_up_weight(feedback))
+    # increase_weight(look_up_weight(feedback))
     return display_article_manual_reweighting(articleid)
 
 
