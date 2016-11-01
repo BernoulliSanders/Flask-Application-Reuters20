@@ -326,20 +326,23 @@ def display_article_manual_reweighting(articleid):
     conn = sqlite3.connect(db2)
     conn.create_function("uncertainty_query", 1, uncertainty_sample)
     c = conn.cursor()
+    cursor2 = c.execute('SELECT predicted_labels FROM RCV1_test_X WHERE INDEXID=?', (articleid,))    
+    pred_class = cursor2.fetchall()
     # cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
     # items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
     cursor = c.execute('SELECT predicted_labels, Headline, Text, uncertainty_query(class_proba), indexID FROM RCV1_test_X WHERE indexID=?', (articleid,))
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
-    # Words aren't changing, but coefficients are.
     weight_coef_dict = dict(zip(bow_vect.get_feature_names(), clf2.coef_[0]))
-    topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = True)[0:10])
-    #if items[0] == 'Defence':
-    # topten = dict(sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[0:10])
-    '''else:
-        topten = dict(sorted(ordered_weights_dict.items(), key=itemgetter(1), reverse = True)[-10:])'''
-    #topten_dict = dict(topten_keys=topten.keys(), topten_values=topten.values())
-    return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten)
+    # topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = False)[0:10])
+    pred_class = str(pred_class)
+    if pred_class == "[('Defence',)]":
+        topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = False)[0:10])
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class)  
+    else:
+        topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = True)[0:10])
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class)
+
 
 # Vertical menu used in an iframe on the article-with-reweighting app
 @app.route('/menu')
