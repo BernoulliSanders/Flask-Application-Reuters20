@@ -14,7 +14,7 @@
 <tr><th colspan="2">
  Why was this article predicted as being about {% for item in items %} {{ item.predicted_labels }}{% endfor %}?
  </br>
- Top 10 words from this article:
+ Top 10 words from this topic:
 </th></tr>
 <form method=post action="">
 {% for key, value in topten.items() %}
@@ -64,6 +64,7 @@
 </td></tr>-->
 <tr><td colspan="2"></td></tr>
 <tr><th colspan="2">Change word importance:</th></tr>
+<tr><td colspan="2">Enter a positive or negative percentage to change the word importance.</td></tr>
 <tr><td>
 <form method=post action="/change_weights_by_percentage">
       <dl>
@@ -95,7 +96,6 @@
 <p>
            {{ item.Text }}
     </p>
-    <p> {{ pred_class }} </p>
 
 <div id='button'>
     <form action="/update-v2" method="post">
