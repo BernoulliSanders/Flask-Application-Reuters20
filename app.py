@@ -40,6 +40,9 @@ count = 0
 # These are used to count the number of times the study has been started and to give the new tables a unique number
 active_l_participant_num = 0
 feature_f_participant_num = 0
+
+username = ""
+
 '''
 def classify(document):
     label = {0: 'negative', 1: 'positive'}
@@ -85,11 +88,11 @@ def feature_f_participant_counter():
 
 #### To be called whenever someone clicks they accept the T&C's on the welcome page, creating a new table
 # Version 1 for active learning
-def new_table_active(path):
+def new_table_active(path, username):
     conn = sqlite3.connect(path)
     c = conn.cursor()
     active_l_participant_counter()
-    table_name = "active_learning_num"+str(active_l_participant_num)
+    table_name = "active_learning_"+str(username)
     c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
     conn.commit()
@@ -97,11 +100,11 @@ def new_table_active(path):
     return display_article()
 
 # Version 2 for feature feedback
-def new_table_feature_feedback(path):
+def new_table_feature_feedback(path, username):
     conn = sqlite3.connect(path)
     c = conn.cursor()
     feature_f_participant_counter()
-    table_name = "feature_feedback_num"+str(feature_f_participant_num)
+    table_name = "feature_feedback_"+str(username)
     c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
     conn.commit()
@@ -139,7 +142,7 @@ def update_class_proba_active(path,count):
     c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Environment and natural world\' WHERE prediction=1')
     c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Defence\' WHERE prediction=0')
     # Add new column to participant tracking table with feedback at t+x 
-    table_name = "active_learning_num"+str(active_l_participant_num)
+    table_name = "active_learning_"+str(username)
     feedback_count()
     column = "class_proba_t_plus_"+str(count)
     c.execute('ALTER TABLE '+table_name+' ADD COLUMN '+column+' REAL')
@@ -164,7 +167,7 @@ def update_class_proba_feature(path,count):
     c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Environment and natural world\' WHERE prediction=1')
     c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Defence\' WHERE prediction=0')
     # Add new column to participant tracking table with feedback at t+x 
-    table_name = "feature_feedback_num"+str(feature_f_participant_num)
+    table_name = "feature_feedback_"+str(username)
     feedback_count()
     column = "class_proba_t_plus_"+str(count)
     c.execute('ALTER TABLE '+table_name+' ADD COLUMN '+column+' REAL')
@@ -244,6 +247,9 @@ class ReviewForm(Form):
                                 [validators.DataRequired(),
                                 validators.length(min=1)])   
     submit_percentage_feature_feedback = TextAreaField('',
+                                [validators.DataRequired(),
+                                validators.length(min=1)])
+    username = TextAreaField('',
                                 [validators.DataRequired(),
                                 validators.length(min=1)])
 
@@ -367,11 +373,13 @@ def display_headlines():
 # This assigns a user to one or other study at random
 @app.route('/study', methods=['POST'])
 def display_app_at_random():
+    global username
+    username = request.form['username']
     page = random.randrange(0, 2)
     if page == 0:
-        return new_table_active(db2)
+        return new_table_active(db2, username)
     else:
-        return new_table_feature_feedback(db2)
+        return new_table_feature_feedback(db2, username)
 
 '''
 @app.route('/menu/<article-id>')
@@ -383,7 +391,8 @@ def display_clicked_article():
 
 @app.route('/')
 def welcome_page():
-    return render_template('opt-in.html')
+    form = ReviewForm(request.form)
+    return render_template('opt-in.html', form=form)
 
 
 if __name__ == '__main__':

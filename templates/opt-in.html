@@ -6,13 +6,19 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
 </head>
 <body>
+
 <p>This is a study comparing active learning and end user feedback for a MSc thesis at City University, London.</p>
 
 <p>Once you have read this page, and are happy that you agree, please start the study by clicking below. Once you click below you will have 10 minutes</p>
+<p>
+Please enter your name to begin:</p>
 <div id='button'>
 <form action="/study" method="post">
-<input type="submit" value="Proceed" name="proceed_with_study">
+{% from "_formhelpers.html" import render_field %}
+{{ render_field(form.username, cols='15', rows='1') }}
 
+<input type="submit" value="Proceed" name="proceed_with_study">
+<input type="hidden" value='{{ form.username }}' name="proceed_with_study">
 </form>
 </div>
 </body>
