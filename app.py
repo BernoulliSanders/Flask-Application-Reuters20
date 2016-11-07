@@ -17,17 +17,17 @@ cur_dir = os.path.dirname(__file__)
 # Load classifier for active learning (uses hashing vectorizer)
 clf = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
-                 'RCV1_log_reg_GDEF_GENV.pkl'), 'rb'))
+                 'RCV1_log_reg_GDEF_GDIS.pkl'), 'rb'))
 
 # Logistic regression with BOW representation of features for feature reweighting approach.
 # I need to make both of these variables stateful
-clf2 = pickle.load(open(os.path.join(cur_dir,
+'''clf2 = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
-                 'log_reg_BOW.pkl'), 'rb'))
+                 'log_reg_BOW.pkl'), 'rb'))'''
 
 bow_vect = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
-                 'BOW_vect.pkl'), 'rb'))
+                 'TF_IDF_vect.pkl'), 'rb'))
 
 # Read in unlabelled pool of 1000 articles from RCV1
 db2 = os.path.join(cur_dir, 'RCV1.sqlite')
@@ -35,13 +35,14 @@ db2 = os.path.join(cur_dir, 'RCV1.sqlite')
 ordered_weights_dict = pickle.load(open(os.path.join(cur_dir,'pkl_objects','ordered_weights_dict.pkl'), 'rb'))
 
 # This is used to name new columns in the SQLite database
-count = 0
+count = 1
 
 # These are used to count the number of times the study has been started and to give the new tables a unique number
 active_l_participant_num = 0
 feature_f_participant_num = 0
 
 username = ""
+tablename = np.random.randint(0,1000000)
 
 '''
 def classify(document):
@@ -53,10 +54,11 @@ def classify(document):
 '''
 
 # Need to update to include headline
+'''
 def train_model(document, y):
-    X = vect.transform([document])
+    X = bow_vect.transform([document])
     clf.partial_fit(X, [y])
-
+'''
 # To be used for feature reweighting approach (feature matrix is bag of words so that individual words can be reweighted)
 def train_model_v2():
     conn = sqlite3.connect('RCV1_train.sqlite')
@@ -65,13 +67,13 @@ def train_model_v2():
     # Update this later to get the headline back in - fit transform wasn't working with two parameters
     X = bow_vect.fit_transform(X['Text'])
     y = pd.read_sql("SELECT label FROM RCV1_training_set;",conn)
-    clf2.fit(X, y.values.ravel())
+    clf.fit(X, y.values.ravel())
     conn.close()
     dest = os.path.join('pkl_objects')
     if not os.path.exists(dest):
         os.makedirs(dest)
-    pickle.dump(bow_vect,open(os.path.join(dest, 'BOW_vect.pkl'), 'wb'), protocol=4)
-    pickle.dump(clf2,open(os.path.join(dest, 'log_reg_BOW.pkl'), 'wb'), protocol=4)
+    pickle.dump(bow_vect,open(os.path.join(dest, 'TF_IDF_vect.pkl'), 'wb'), protocol=4)
+    pickle.dump(clf,open(os.path.join(dest, 'RCV1_log_reg_GDEF_GDIS.pkl'), 'wb'), protocol=4)
 
 
 def feedback_count():
@@ -93,7 +95,7 @@ def new_table_active(path, username):
     c = conn.cursor()
     active_l_participant_counter()
     table_name = "active_learning_"+str(username)
-    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
+    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
     conn.commit()
     conn.close()
@@ -105,17 +107,18 @@ def new_table_feature_feedback(path, username):
     c = conn.cursor()
     feature_f_participant_counter()
     table_name = "feature_feedback_"+str(username)
-    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
+    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
     conn.commit()
     conn.close()
     # Return random article as the first one to be shown to the user. This function is only called once.
     return display_article_manual_reweighting(random.randrange(0, 1000))
 
-def add_to_training_set(indexID, headline, text, label):
+def add_to_training_set(index, Headline, Text, Label):
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
-    c.execute('INSERT INTO RCV1_training_set VALUES (?, ?, ?, ?)', (indexID, headline, text, label))
+    Full_Text = Headline + " " + Text
+    c.execute('INSERT INTO RCV1_training_set VALUES (?, ?, ?, ?, ?)', (index, Headline, Text, Label, Full_Text))
     conn.commit()
     conn.close()
 
@@ -128,7 +131,7 @@ def update_class_proba_active(path,count):
     c = conn.cursor()
     cursor = c.execute('SELECT text, indexID FROM RCV1_test_X')
     all_rows = cursor.fetchall()
-    X = vect.transform(x[0] for x in all_rows)
+    X = bow_vect.transform(x[0] for x in all_rows)
     # Calculate new class probabilities
     new_proba = list(float(z) for z in clf.predict_proba(X)[:, 1])
     IDs = list(int(zz) for zz in np.arange(0, 1000, 1))
@@ -136,7 +139,7 @@ def update_class_proba_active(path,count):
     # Update predicted classes for unlabelled pool
     new_class = list(int(xy) for xy in clf.predict(X))
     new_class_tuple = list(zip(new_class,IDs))
-    # Update values in main table (which holds the articles, headlines and predicted labels)
+    # Update values in main table (which holds the articles, headlines and predicted labels) (N.B. not updating these values in user feedback table)
     c.executemany('UPDATE RCV1_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
     c.executemany('UPDATE RCV1_test_X SET prediction=? WHERE indexID=?', new_class_tuple)
     c.execute('UPDATE RCV1_test_X SET predicted_labels=\'Environment and natural world\' WHERE prediction=1')
@@ -156,10 +159,10 @@ def update_class_proba_feature(path,count):
     cursor = c.execute('SELECT text, indexID FROM RCV1_test_X')
     all_rows = cursor.fetchall()
     X = bow_vect.transform(x[0] for x in all_rows)
-    new_proba = list(round(float(z),3) for z in clf2.predict_proba(X)[:, 1])
+    new_proba = list(round(float(z),3) for z in clf.predict_proba(X)[:, 1])
     IDs = list(int(zz) for zz in np.arange(0, 1000, 1))
     new_proba_tuple = list(zip(new_proba,IDs))
-    new_class = list(int(xy) for xy in clf2.predict(X))
+    new_class = list(int(xy) for xy in clf.predict(X))
     new_class_tuple = list(zip(new_class,IDs))
     # Update values in main table (which holds the articles, headlines and predicted labels)
     c.executemany('UPDATE RCV1_test_X SET class_proba=? WHERE indexID=?', new_proba_tuple)
@@ -208,7 +211,7 @@ def change_weight(word, percentage):
     percentage = int(percentage)
     index = bow_vect.vocabulary_.get(word)
     if index != None:
-        clf2.coef_[0][index] = clf2.coef_[0][index] + clf2.coef_[0][index] * (percentage/100)
+        clf.coef_[0][index] = clf.coef_[0][index] + clf.coef_[0][index] * (percentage/100)
  
 
 # This updates the ordered weights dict
@@ -261,13 +264,16 @@ def update_classifier_feedback():
     feedback = request.form['update_classifier']
     article = request.form['uncertain_article']
     prediction = request.form['prediction']
+    headline = request.form['article_headline']
+    articleid = request.form['articleid']
     inv_label = {"Defence": 0, "Environment and natural world": 1}
     y = inv_label[prediction]
     # track_instance_feedback(y)
     if feedback == 'Incorrect':
         y = int(not(y))
+    add_to_training_set(articleid,headline,article,y)
     # Retrain model with uncertain article and new (or same as before) label - should really update this to incorporate the headline too.
-    train_model(article, y)
+    train_model_v2()
     # Update class probabilities and labels for entire test set
     update_class_proba_active(db2,count)
     return render_template('thanks.html')
@@ -329,8 +335,8 @@ def display_article():
     conn.create_function("uncertainty_query",1,uncertainty_sample)
     c = conn.cursor()
     table_name = "active_learning_num"+str(active_l_participant_num)
-    cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
-    items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
+    cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)), indexID FROM RCV1_test_X')
+    items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     return render_template('article.html', items=items)
 
 # This displays the feature feedback application
@@ -347,7 +353,7 @@ def display_article_manual_reweighting(articleid):
     cursor = c.execute('SELECT predicted_labels, Headline, Text, uncertainty_query(class_proba), indexID FROM RCV1_test_X WHERE indexID=?', (articleid,))
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
-    weight_coef_dict = dict(zip(bow_vect.get_feature_names(), clf2.coef_[0]))
+    weight_coef_dict = dict(zip(bow_vect.get_feature_names(), clf.coef_[0]))
     # topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = False)[0:10])
     pred_class = str(pred_class)
     if pred_class == "[('Defence',)]":
@@ -381,13 +387,6 @@ def display_app_at_random():
     else:
         return new_table_feature_feedback(db2, username)
 
-'''
-@app.route('/menu/<article-id>')
-def display_clicked_article():
-    conn = sqlite3.connect(db2)
-    c = conn.cursor()
-    cursor = c.execute('SELECT Headline, Text FROM RCV1_test_X')
-'''
 
 @app.route('/')
 def welcome_page():
