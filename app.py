@@ -9,7 +9,7 @@ import random
 import heapq
 from operator import itemgetter
 # import HashingVectorizer from local dir
-from vectorizer import vect
+from vectorizer import vect, tokenizer
 
 app = Flask(__name__)
 
@@ -106,6 +106,7 @@ def new_table_feature_feedback(path, username):
     conn = sqlite3.connect(path)
     c = conn.cursor()
     feature_f_participant_counter()
+    create_reweighting_table(username)
     table_name = "feature_feedback_"+str(username)
     c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
@@ -121,6 +122,23 @@ def add_to_training_set(index, Headline, Text, Label):
     c.execute('INSERT INTO RCV1_training_set VALUES (?, ?, ?, ?, ?)', (index, Headline, Text, Label, Full_Text))
     conn.commit()
     conn.close()
+
+def create_reweighting_table(username):
+    conn = sqlite3.connect('RCV1.sqlite')
+    c = conn.cursor()
+    table_name = "weights_changed_"+str(username)
+    c.execute("CREATE TABLE "+table_name+"(weight TEXT, updated_weight)")
+    conn.commit()
+    conn.close()
+    
+def insert_into_reweighting_table(weight,updated_weight):
+    conn = sqlite3.connect('RCV1.sqlite')
+    c = conn.cursor()
+    table_name = "weights_changed_"+str(username)
+    c.execute("INSERT INTO "+table_name+" VALUES (?,?)", (weight, updated_weight))
+    conn.commit()
+    conn.close()
+
 
 
 '''This vectorizes all articles, calculates the updated probabilities, 
@@ -191,12 +209,13 @@ def track_instance_feedback(y):
 
 ##### Functions for free text form ######
 # This gives the index location of the weight
+'''
 def look_up_weight(word):
     return list(ordered_weights_dict.keys()).index(word)
 
 # This takes the index location of the weight and updates it.
 # So far this only updates the weight in the classifier coefficient. I will need to update it in the ordered weights dict too.
-'''
+
 def increase_weight(index):
     if clf.coef_[0][index] !=0:
         clf.coef_[0][index] = clf.coef_[0][index] * 10
@@ -224,6 +243,21 @@ def increase_weight_in_weights_dict_perc(word, percentage):
     else:
         ordered_weights_dict[word] = -10
 
+# Returns a list of tuples of the top 10 weights in the string  
+def look_up_word(article):
+    matching_iloc = []
+    matching_word = []
+    for i in article:
+        if bow_vect.vocabulary_.get(i) != None:
+            matching_iloc.append(bow_vect.vocabulary_.get(i))
+            matching_word.append(i)
+    matching_weights = []
+    for word in matching_iloc:
+            matching_weights.append(clf.coef_[0][word])
+    weights_dict = dict(zip(matching_word,matching_weights))
+    #weights_dict = sorted(weights_dict.items(),reverse=True)
+    weights_dict = dict(sorted(weights_dict.items(), key=itemgetter(1), reverse = False)[0:10])
+    return weights_dict 
 
 
 ###### Functions for sliders ######    
@@ -299,6 +333,13 @@ def update_classifier_feedback_v2():
     update_class_proba_feature(db2,count)
     return render_template('thank-you.html')
 
+
+@app.route('/change-weights', methods=['POST'])
+def show_weights():
+    feedback = request.form['change_weight']
+    #feedback = request.form['weight_updates']
+    return feedback
+
 '''
 @app.route('/change-weights', methods=['POST'])
 def manually_change_weights():
@@ -319,6 +360,7 @@ def manually_change_weights_by_percentage():
     # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
     articleid = request.form['articleid']
     change_weight(feedback, percentage)
+    insert_into_reweighting_table(feedback,percentage)
     # Increase weight in ordered dict
     # increase_weight_in_weights_dict_perc(feedback,percentage)
     # Increase weight in actual classifier
@@ -354,14 +396,18 @@ def display_article_manual_reweighting(articleid):
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
     weight_coef_dict = dict(zip(bow_vect.get_feature_names(), clf.coef_[0]))
-    # topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = False)[0:10])
+    cursor3 = c.execute('SELECT Full_Text FROM RCV1_test_X WHERE INDEXID=?', (articleid,))    
+    article = cursor3.fetchall()
+    article = str(article)
+    top_ten_from_article = look_up_word(tokenizer(article))
     pred_class = str(pred_class)
+    #return top_ten_from_article
     if pred_class == "[('Defence',)]":
         topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = False)[0:10])
-        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class)  
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class, top_ten_from_article=top_ten_from_article)  
     else:
         topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = True)[0:10])
-        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class)
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class,top_ten_from_article=top_ten_from_article)
 
 
 # Vertical menu used in an iframe on the article-with-reweighting app

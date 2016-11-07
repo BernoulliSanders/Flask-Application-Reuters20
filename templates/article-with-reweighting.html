@@ -16,14 +16,22 @@
  </br>
  Top 10 words from this topic:
 </th></tr>
-<form method=post action="">
+<form method=post action="/change-weights">
 {% for key, value in topten.items() %}
-<tr><td colspan="2">
-<label for="weight">{{ key }} {{ value }}</label>
-</td></tr>
 <tr><td>
+<label for="weight">{{ key }} {{ value }}</label>
+</td><td>
 
-</td></tr>{% endfor %}</form>
+  <input type="radio" name="change_weight {{ key }}" value="decrease {{ key }}">Decrease<br>
+  <input type="radio" name="change_weight {{ key }}" value="leave_unchanged {{ key }}" checked>Leave unchanged<br>
+  <input type="radio" name="change_weight {{ key }}" value="increase {{ key }}">Increase
+
+</td></tr>
+{% endfor %}
+<tr><td>
+<input type="submit" value='Change weights' name="weight_updates">
+</td></tr>
+</form>
 
 <!--
 <tr><td colspan="2">
@@ -79,8 +87,22 @@
     <input type="hidden" value="{{ articleid }}" name="articleid">
 </form>
 </td></tr>
-</table>
+<tr><td>
 {% for item in items %}
+<div id='button'>
+    <form action="/update-v2" method="post">
+      <input type=submit value='Correct' name='update_classifier'>
+    <input type=submit value='Incorrect' name='update_classifier'>
+    <input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
+    <input type=hidden value='{{ item.Text }}' name='uncertain_article'>
+    <input type="hidden" value=" {{ item.Headline }} " name="article_headline">
+    <input type="hidden" value="{{ articleid }}" name="articleid">
+    </form>
+    </td>
+</div>
+</tr>
+</table>
+
 <div class="container">
 <h3><strong> {{ item.Headline }}
 </strong>
@@ -96,17 +118,11 @@
 <p>
            {{ item.Text }}
     </p>
+<p>
+  {{ top_ten_from_article }}
 
-<div id='button'>
-    <form action="/update-v2" method="post">
-      <input type=submit value='Correct' name='update_classifier'>
-    <input type=submit value='Incorrect' name='update_classifier'>
-    <input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
-    <input type=hidden value='{{ item.Text }}' name='uncertain_article'>
-    <input type="hidden" value=" {{ item.Headline }} " name="article_headline">
-    <input type="hidden" value="{{ articleid }}" name="articleid">
-    </form>
-</div>
+</p>
+
 </div>
 {% endfor %}
 
