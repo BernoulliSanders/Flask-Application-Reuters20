@@ -1,4 +1,4 @@
-body {font-family: serif; width:1120px; background-color:white; color:black; font-size: 16px;}
+body {font-family: serif; width:1170px; background-color:white; color:black; font-size: 16px;}
 
 h1 {color:white;  width:200px;  font:"Helvetica Neue"; 
     
@@ -34,12 +34,12 @@ a {color:white;}
 
 strong.narrow {}
 
-table {width: 200px;}
+table {width: 300px;}
 
-table.table1 {background-color:#505050; width: 200px; align-items:"right"; border: solid; border-width: 2px; border-radius: 10px; 
+table.table1 {background-color:#505050; width: 300px; align-items:"right"; border: solid; border-width: 2px; border-radius: 10px; 
 border-color:white; padding: 3px}
 
-table.table2 { width: 300px; align-items:"left"; margin-top: 3px; float: top}
+table.table2 { width: 150px; align-items:"left"; margin-top: 3px; float: top}
 
 td { color:#ffffb3;
     text-align: left;

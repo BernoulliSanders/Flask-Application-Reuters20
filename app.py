@@ -243,7 +243,7 @@ def increase_weight_in_weights_dict_perc(word, percentage):
     else:
         ordered_weights_dict[word] = -10
 
-# Returns a list of tuples of the top 10 weights in the string  
+# Returns a list of tuples of the top 10 weights in the string, used to find top ten weights   
 def look_up_word(article):
     matching_iloc = []
     matching_word = []
@@ -418,7 +418,7 @@ def display_headlines():
     # conn.create_function("ignore_sign", 1, abs)
     conn.create_function("uncertainty_query", 1, uncertainty_sample_chopped)
     c = conn.cursor()
-    cursor = c.execute('SELECT Headline, uncertainty_query(class_proba), predicted_labels, indexID FROM RCV1_test_X')
+    cursor = c.execute('SELECT Headline, uncertainty_query(class_proba), predicted_labels, indexID FROM RCV1_test_X ORDER BY uncertainty_query(class_proba) ASC;')
     menu_items = [dict(Headline=row[0], class_proba=row[1], predicted_labels=row[2][:11], indexID=row[3]) for row in cursor.fetchall()]
     return render_template('menu.html', items=menu_items)
 

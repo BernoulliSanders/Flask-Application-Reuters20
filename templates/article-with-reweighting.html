@@ -16,22 +16,33 @@
  </br>
  Top 10 words from this topic:
 </th></tr>
-<form method=post action="/change-weights">
-{% for key, value in topten.items() %}
 <tr><td>
-<label for="weight">{{ key }} {{ value }}</label>
-</td><td>
-
-  <input type="radio" name="change_weight {{ key }}" value="decrease {{ key }}">Decrease<br>
-  <input type="radio" name="change_weight {{ key }}" value="leave_unchanged {{ key }}" checked>Leave unchanged<br>
-  <input type="radio" name="change_weight {{ key }}" value="increase {{ key }}">Increase
-
+<form method=post action="/change-weights">
+<table>
+{% for key, value in top_ten_from_article.items() %}
+<tr><td>
+  {{ key }}   <input type="radio" name="change_weight {{ key }}" value="increase {{ key }}">+
+  <input type="radio" name="change_weight {{ key }}" value="decrease {{ key }}">-
+</td></tr>
+{% endfor %}  
+</table>
+</td>
+<td>
+<table>
+{% for key, value in topten.items() %}
+<tr><td><label for="weight">{{ key }}</label>
+  <input type="radio" name="change_weight {{ key }}" value="increase {{ key }}">+
+  <input type="radio" name="change_weight {{ key }}" value="decrease {{ key }}">-
 </td></tr>
 {% endfor %}
+</form>
+</table></td>
+
 <tr><td>
 <input type="submit" value='Change weights' name="weight_updates">
 </td></tr>
 </form>
+
 
 <!--
 <tr><td colspan="2">
@@ -118,10 +129,7 @@
 <p>
            {{ item.Text }}
     </p>
-<p>
-  {{ top_ten_from_article }}
 
-</p>
 
 </div>
 {% endfor %}
