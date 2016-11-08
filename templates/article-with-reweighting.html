@@ -19,23 +19,24 @@
 <tr><td>
 <form method=post action="/change-weights">
 <table>
+<th>This article:</th>
 {% for key, value in top_ten_from_article.items() %}
 <tr><td>
-  {{ key }}   <input type="radio" name="change_weight {{ key }}" value="increase {{ key }}">+
-  <input type="radio" name="change_weight {{ key }}" value="decrease {{ key }}">-
+  {{ key }}   <input type="radio" name="change_weight_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
+  <input type="radio" name="change_weight_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
 </td></tr>
 {% endfor %}  
 </table>
 </td>
 <td>
 <table>
+<th>All articles:</th>
 {% for key, value in topten.items() %}
 <tr><td><label for="weight">{{ key }}</label>
   <input type="radio" name="change_weight {{ key }}" value="increase {{ key }}">+
   <input type="radio" name="change_weight {{ key }}" value="decrease {{ key }}">-
 </td></tr>
 {% endfor %}
-</form>
 </table></td>
 
 <tr><td>

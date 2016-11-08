@@ -127,10 +127,10 @@ def create_reweighting_table(username):
     conn = sqlite3.connect('RCV1.sqlite')
     c = conn.cursor()
     table_name = "weights_changed_"+str(username)
-    c.execute("CREATE TABLE "+table_name+"(weight TEXT, updated_weight)")
+    c.execute("CREATE TABLE "+table_name+"(word TEXT, change TEXT)")
     conn.commit()
     conn.close()
-    
+'''    
 def insert_into_reweighting_table(weight,updated_weight):
     conn = sqlite3.connect('RCV1.sqlite')
     c = conn.cursor()
@@ -138,8 +138,15 @@ def insert_into_reweighting_table(weight,updated_weight):
     c.execute("INSERT INTO "+table_name+" VALUES (?,?)", (weight, updated_weight))
     conn.commit()
     conn.close()
-
-
+'''
+def insert_into_reweighting_table(feedback):
+    conn = sqlite3.connect('RCV1.sqlite')
+    c = conn.cursor()
+    table_name = "weights_changed_"+str(username)
+    words = [tuple(x.split(' ')) for x in feedback]
+    c.executemany("INSERT INTO "+table_name+" (word,change) VALUES (?,?)", words)
+    conn.commit()
+    conn.close()
 
 '''This vectorizes all articles, calculates the updated probabilities, 
 updates the class probabilities, and adds a new column for each piece 
@@ -289,6 +296,9 @@ class ReviewForm(Form):
     username = TextAreaField('',
                                 [validators.DataRequired(),
                                 validators.length(min=1)])
+    new_instance = TextAreaField('',
+                                [validators.DataRequired(),
+                                validators.length(min=1)])
 
 #### Flask functions ######
 
@@ -333,12 +343,30 @@ def update_classifier_feedback_v2():
     update_class_proba_feature(db2,count)
     return render_template('thank-you.html')
 
-
+'''
 @app.route('/change-weights', methods=['POST'])
 def show_weights():
-    feedback = request.form['change_weight']
+    feedback_list = []
+    feedback_1 = request.form['change_weight_1']
+    feedback_list.append(feedback_1)
+    feedback_2 = request.form['change_weight_2']
+    feedback_list.append(feedback_2)
     #feedback = request.form['weight_updates']
-    return feedback
+    feedback_list = str(feedback_list)
+    return feedback_list
+'''
+@app.route('/change-weights', methods=['POST'])
+def show_weights():
+    feedback_list = []
+    for i in range(1,11):
+        feedback = request.form['change_weight_'+str(i)]
+        feedback_list.append(feedback)
+    #feedback_2 = request.form['change_weight_2']
+    #feedback_list.append(feedback_2)
+    #feedback = request.form['weight_updates']
+    insert_into_reweighting_table(feedback_list)
+    feedback_list = str(feedback_list)
+    return feedback_list
 
 '''
 @app.route('/change-weights', methods=['POST'])
