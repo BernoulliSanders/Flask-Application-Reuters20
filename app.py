@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Markup
 from wtforms import Form, TextAreaField, validators
 import pickle
 import sqlite3
@@ -145,6 +145,13 @@ def insert_into_reweighting_table(feedback):
     table_name = "weights_changed_"+str(username)
     words = [tuple(x.split(' ')) for x in feedback]
     c.executemany("INSERT INTO "+table_name+" (word,change) VALUES (?,?)", words)
+    conn.commit()
+    conn.close()
+
+def insert_new_instance(instance):
+    conn = sqlite3.connect('RCV1_train.sqlite')
+    c = conn.cursor()
+    c.execute('INSERT INTO RCV1_training_set')
     conn.commit()
     conn.close()
 
@@ -383,12 +390,11 @@ def manually_change_weights():
 @app.route('/change_weights_by_percentage', methods=['POST'])
 def manually_change_weights_by_percentage():
     # This pulls the contents from the feature_feedback form in article-with-reweighting
-    feedback = request.form['feature_feedback']
-    percentage = request.form['submit_percentage_feature_feedback']
+    feedback = request.form['new_instance']
     # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
     articleid = request.form['articleid']
-    change_weight(feedback, percentage)
-    insert_into_reweighting_table(feedback,percentage)
+    #change_weight(feedback, percentage)
+    #insert_into_reweighting_table(feedback,percentage)
     # Increase weight in ordered dict
     # increase_weight_in_weights_dict_perc(feedback,percentage)
     # Increase weight in actual classifier
@@ -428,14 +434,17 @@ def display_article_manual_reweighting(articleid):
     article = cursor3.fetchall()
     article = str(article)
     top_ten_from_article = look_up_word(tokenizer(article))
+    for w in top_ten_from_article.keys():
+        article = article.replace(w, '<mark>'+w+'</mark>')
+    article = Markup(article)
     pred_class = str(pred_class)
     #return top_ten_from_article
     if pred_class == "[('Defence',)]":
         topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = False)[0:10])
-        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class, top_ten_from_article=top_ten_from_article)  
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class, top_ten_from_article=top_ten_from_article, article=article)  
     else:
         topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = True)[0:10])
-        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class,top_ten_from_article=top_ten_from_article)
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class,top_ten_from_article=top_ten_from_article, article=article)
 
 
 # Vertical menu used in an iframe on the article-with-reweighting app
