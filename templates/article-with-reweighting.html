@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>RCV1 Article</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
 <!--<h2>Choose article:</h2>-->
@@ -33,8 +34,8 @@
 <th>All articles:</th>
 {% for key, value in topten.items() %}
 <tr><td><label for="weight">{{ key }}</label>
-  <input type="radio" name="change_weight {{ key }}" value="increase {{ key }}">+
-  <input type="radio" name="change_weight {{ key }}" value="decrease {{ key }}">-
+  <input type="radio" name="change_weight {{ key }}" value="increase {{ key }}"><strong>+</strong>
+  <input type="radio" name="change_weight {{ key }}" value="decrease {{ key }}"><strong>-</strong>
 </td></tr>
 {% endfor %}
 </table></td>
@@ -48,20 +49,22 @@
 <tr><th colspan="2">Add new words</th></tr>
 <tr><td colspan="2">If any would better describe the topic {% for item in items %} <strong>'{{item.predicted_labels }}' </strong>{% endfor %} than those above, enter them here</td></tr>
 <tr><td>
-<form method=post action="/change_weights_by_percentage">
+<form method=post action="/add_new_instance">
       <dl>
  Words: {{ render_field(form.new_instance, cols='30', rows='1') }}
  
   </dl>
   </td>
   <td>
-    <input type=submit value='Submit feedback' name='submit_feature_feedback'>
+  {% for item in items %}
+    <input type=submit value='Submit feedback' name='submit_new_instance'>
       <input type="hidden" value='{{ form.new_instance }}' name='new_instance'>
     <input type="hidden" value="{{ articleid }}" name="articleid">
+        <input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
 </form>
 </td></tr>
 <tr><td>
-{% for item in items %}
+
 <div id='button'>
     <form action="/update-v2" method="post">
       <input type=submit value='Correct' name='update_classifier'>
@@ -91,10 +94,26 @@
 <p>
            {{ article }}
     </p>
-
-
-</div>
 {% endfor %}
+  <div id="myDiv" style="width: 480px; height: 400px;"><!-- Plotly chart will be drawn inside this DIV --></div>
+
+  <script>
+
+    var data = [{
+  type: 'bar',
+  x: [ {% for key, value in topten.items() %} {{ value }}, {% endfor %} ],
+  y: [ {% for key, value in topten.items() %} ' {{ key }} ', {% endfor %} ],
+  orientation: 'h'
+}];
+
+var layout = { showlegend: false};
+
+Plotly.newPlot('myDiv', data, layout, {staticPlot: true});
+
+
+  </script>
+</div>
+
 
 
   </body>

@@ -94,6 +94,7 @@ def new_table_active(path, username):
     conn = sqlite3.connect(path)
     c = conn.cursor()
     active_l_participant_counter()
+    global table_name
     table_name = "active_learning_"+str(username)
     c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
@@ -107,6 +108,7 @@ def new_table_feature_feedback(path, username):
     c = conn.cursor()
     feature_f_participant_counter()
     create_reweighting_table(username)
+    global table_name
     table_name = "feature_feedback_"+str(username)
     c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
@@ -115,11 +117,21 @@ def new_table_feature_feedback(path, username):
     # Return random article as the first one to be shown to the user. This function is only called once.
     return display_article_manual_reweighting(random.randrange(0, 1000))
 
+# Add article to training set
 def add_to_training_set(index, Headline, Text, Label):
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
     Full_Text = Headline + " " + Text
     c.execute('INSERT INTO RCV1_training_set VALUES (?, ?, ?, ?, ?)', (index, Headline, Text, Label, Full_Text))
+    conn.commit()
+    conn.close()
+    remove_from_test_set(index)
+
+# Remove newly labelled article from training set
+def remove_from_test_set(index):
+    conn = sqlite3.connect('RCV1.sqlite')
+    c = conn.cursor()
+    c.execute('DELETE FROM '+table_name+' WHERE indexID=?', (index,))
     conn.commit()
     conn.close()
 
@@ -148,10 +160,10 @@ def insert_into_reweighting_table(feedback):
     conn.commit()
     conn.close()
 
-def insert_new_instance(instance):
+def insert_new_instance(article_id, new_instance, label):
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
-    c.execute('INSERT INTO RCV1_training_set')
+    c.execute('INSERT INTO RCV1_training_set VALUES (?,?,?,?,?)', (article_id, "NaN", "NaN", label, new_instance))
     conn.commit()
     conn.close()
 
@@ -387,18 +399,13 @@ def manually_change_weights():
 '''
 
 #This changes the weight by the percentage in the form, then returns the same article after the feedback is submitted
-@app.route('/change_weights_by_percentage', methods=['POST'])
-def manually_change_weights_by_percentage():
-    # This pulls the contents from the feature_feedback form in article-with-reweighting
+@app.route('/add_new_instance', methods=['POST'])
+def retrieve_new_instance():
     feedback = request.form['new_instance']
-    # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
     articleid = request.form['articleid']
-    #change_weight(feedback, percentage)
-    #insert_into_reweighting_table(feedback,percentage)
-    # Increase weight in ordered dict
-    # increase_weight_in_weights_dict_perc(feedback,percentage)
-    # Increase weight in actual classifier
-    # increase_weight(look_up_weight(feedback))
+    prediction = request.form['prediction']
+    submit = request.form['submit_new_instance']
+    insert_new_instance(articleid,feedback,prediction)
     return display_article_manual_reweighting(articleid)
 
 
