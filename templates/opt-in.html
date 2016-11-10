@@ -8,19 +8,19 @@
 </head>
 <body>
 
-<p>This is a study comparing active learning and end user feedback for a MSc thesis at City University, London by Sam Logan. The purpose of this study is to evaluate.... </p>
+<p>This is a study comparing active learning and end user feedback as the 
+individual project for an MSc in Data Science at City University, London by Sam Logan. 
+The purpose of this study is to evaluate.... </p>
 <p>By clicking 'Proceed', you are giving consent that  </p>
 <p>Once you have read this page, and are happy that you agree, please start the study by clicking below. Once you click below you will have 10 minutes</p>
-<p></p>
-<p>
-Please enter your name to begin:</p>
+<p>Native Engl</p>
+
 <div id='button'>
 <form action="/study" method="post">
-{% from "_formhelpers.html" import render_field %}
-{{ render_field(form.username, cols='15', rows='1') }}
+
 
 <input type="submit" value="Proceed" name="proceed_with_study" onclick="myFunction()">
-<input type="hidden" value='{{ form.username }}' name="proceed_with_study">
+
 </form>
 </div>
 </body>

@@ -45,8 +45,7 @@ feedback_given = 0
 active_l_participant_num = 0
 feature_f_participant_num = 0
 
-username = ""
-tablename = np.random.randint(0,1000000)
+username = np.random.randint(0,1000000)
 
 
 '''
@@ -279,7 +278,7 @@ def increase_weight_in_weights_dict_perc(word, percentage):
         ordered_weights_dict[word] = -10
 
 # Returns a list of tuples of the top 10 weights in the string, used to find top ten weights   
-def look_up_word(article):
+def look_up_word(article, pred_class):
     matching_iloc = []
     matching_word = []
     for i in article:
@@ -291,7 +290,10 @@ def look_up_word(article):
             matching_weights.append(clf.coef_[0][word])
     weights_dict = dict(zip(matching_word,matching_weights))
     #weights_dict = sorted(weights_dict.items(),reverse=True)
-    weights_dict = dict(sorted(weights_dict.items(), key=itemgetter(1), reverse = False)[0:10])
+    if pred_class == "[('Defence',)]":
+        weights_dict = dict(sorted(weights_dict.items(), key=itemgetter(1), reverse = False)[0:10])
+    else:
+        weights_dict = dict(sorted(weights_dict.items(), key=itemgetter(1), reverse = True)[0:10])
     return weights_dict 
 
 
@@ -390,6 +392,9 @@ def show_weights():
     for i in range(1,11):
         feedback = request.form['change_weight_'+str(i)]
         feedback_list.append(feedback)
+    for i in range(1,11):
+        feedback = request.form['change_weight_overall_'+str(i)]
+        feedback_list.append(feedback)
     #feedback_2 = request.form['change_weight_2']
     #feedback_list.append(feedback_2)
     #feedback = request.form['weight_updates']
@@ -441,29 +446,31 @@ def display_article_manual_reweighting(articleid):
     c = conn.cursor()
     cursor2 = c.execute('SELECT predicted_labels FROM RCV1_test_X WHERE INDEXID=?', (articleid,))    
     pred_class = cursor2.fetchall()
-    # cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)) FROM RCV1_test_X')
-    # items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3]) for row in cursor.fetchall()]
     cursor = c.execute('SELECT predicted_labels, Headline, Text, uncertainty_query(class_proba), indexID FROM RCV1_test_X WHERE indexID=?', (articleid,))
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     form = ReviewForm(request.form)
     weight_coef_dict = dict(zip(bow_vect.get_feature_names(), clf.coef_[0]))
-    cursor3 = c.execute('SELECT Full_Text FROM RCV1_test_X WHERE INDEXID=?', (articleid,))    
+    cursor3 = c.execute('SELECT Text FROM RCV1_test_X WHERE INDEXID=?', (articleid,))    
     article = cursor3.fetchall()
     article = str(article)
-    top_ten_from_article = look_up_word(tokenizer(article))
+    pred_class = str(pred_class)
+    top_ten_from_article = look_up_word(tokenizer(article), pred_class)
     for w in top_ten_from_article.keys():
         article = article.replace(' '+w+' ', ' <mark>'+w+'</mark> ')
     article = article[3:-4] # This removes the quote marks
     article = Markup(article)
-    pred_class = str(pred_class)
-    top_ten_from_article = OrderedDict(top_ten_from_article)
-    #return top_ten_from_article
     if pred_class == "[('Defence',)]":
         topten = OrderedDict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = False)[0:10])
-        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class, top_ten_from_article=top_ten_from_article, article=article, feedback_given=feedback_given)  
+        topten_for_chart = OrderedDict(reversed(list(topten.items())))
+        top_ten_from_article = OrderedDict(sorted(top_ten_from_article.items(), key=itemgetter(1), reverse = False)[0:10])
+        topten_for_chart_article = OrderedDict(reversed(list(top_ten_from_article.items())))
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class, top_ten_from_article=top_ten_from_article, topten_for_chart_article=topten_for_chart_article, article=article, feedback_given=feedback_given, topten_for_chart=topten_for_chart)  
     else:
         topten = OrderedDict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = True)[0:10])
-        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class,top_ten_from_article=top_ten_from_article, article=article, feedback_given=feedback_given)
+        topten_for_chart = OrderedDict(reversed(list(topten.items())))
+        top_ten_from_article = OrderedDict(sorted(top_ten_from_article.items(), key=itemgetter(1), reverse = True)[0:10])
+        topten_for_chart_article = OrderedDict(reversed(list(top_ten_from_article.items())))
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class,top_ten_from_article=top_ten_from_article, topten_for_chart_article=topten_for_chart_article, article=article, feedback_given=feedback_given, topten_for_chart=topten_for_chart)
 
 
 # Vertical menu used in an iframe on the article-with-reweighting app
@@ -481,14 +488,11 @@ def display_headlines():
 # This assigns a user to one or other study at random
 @app.route('/study', methods=['POST'])
 def display_app_at_random():
-    global username
-    username = request.form['username']
     page = random.randrange(0, 2)
     if page == 0:
         return new_table_active(db2, username)
     else:
         return new_table_feature_feedback(db2, username)
-
 
 @app.route('/')
 def welcome_page():

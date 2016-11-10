@@ -21,26 +21,118 @@
 </th></tr>
 <tr><td>
 <form method=post action="/change-weights">
-<table>
-<th>This article:</th>
-{% for key, value in top_ten_from_article.items() %}
+<table class="table2">
+<th colspan="2">This article:</th>
+<tr>
+<td>
+<table class="table2">
 <tr><td>
-  {{ key }}   <input type="radio" name="change_weight_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
-  <input type="radio" name="change_weight_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
+
+
+<div id="myDiv" style="width: 130px; height: 235px;"><!-- Plotly chart will be drawn inside this DIV --></div>
+
+  <script>
+var data = [{
+  type: 'bar',
+  y: [ {% for key, value in topten_for_chart_article.items() %} ' {{ key }} ', {% endfor %} ],
+  x: [ {% for key, value in topten_for_chart_article.items() %} {{ value }}, {% endfor %} ],
+  orientation: 'h'
+}];
+
+var layout = { showlegend: false, ascending: true, paper_bgcolor: 'rgba(0,0,0,0)',
+ margin: {
+    l: 60,
+    r: 2,
+    t: 2,b: 1
+  },
+
+   bgcolor: 'rgba(255, 255, 255, 0)',
+  plot_bgcolor: 'rgba(255, 255, 255, 0)',
+font: {
+color: 'white'
+}
+};
+
+Plotly.newPlot('myDiv', data, layout, {staticPlot: true});
+  </script>
+
+
+  </td></tr>
+ </table>
+</td>
+<td>
+<table class="table2">
+{% for key, value in top_ten_from_article.items() %}
+<tr><td> {{ key }}
+<input type="radio" name="change_weight_overall_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
+  <input type="radio" name="change_weight_overall_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
 </td></tr>
-{% endfor %}  
+{% endfor %} 
+</table>
+</td></tr> 
 </table>
 </td>
 <td>
-<table>
-<th>All articles:</th>
+<table class="table2">
+<th colspan="2">All articles:</th>
+<tr><td>
+
+
+<table class="table2">
+  <tr><td>
+
+
+  <div id="myDiv2" style="width: 130px; height: 235px;"><!-- Plotly chart will be drawn inside this DIV --></div>
+
+  <script>
+
+    var data = [{
+  type: 'bar',
+  y: [ {% for key, value in topten_for_chart.items() %} ' {{ key }} ', {% endfor %} ],
+  x: [ {% for key, value in topten_for_chart.items() %} {{ value }}, {% endfor %} ],
+  orientation: 'h'
+}];
+
+var layout = { showlegend: false, ascending: true, paper_bgcolor: 'rgba(0,0,0,0)',
+ margin: {
+    l: 60,
+    r: 2,
+    t: 2,b: 1
+  },
+
+   bgcolor: 'rgba(255, 255, 255, 0)',
+  plot_bgcolor: 'rgba(255, 255, 255, 0)',
+font: {
+color: 'white'
+}
+};
+Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
+  </script>
+
+
+</td></tr>
+</table>
+</td>
+
+
+
+
+<td>
+<table class="table2">
+<tr><td>
 {% for key, value in topten.items() %}
 <tr><td><label for="weight">{{ key }}</label>
-  <input type="radio" name="change_weight {{ key }}" value="increase {{ key }}"><strong>+</strong>
-  <input type="radio" name="change_weight {{ key }}" value="decrease {{ key }}"><strong>-</strong>
+<input type="radio" name="change_weight_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
+  <input type="radio" name="change_weight_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
 </td></tr>
 {% endfor %}
-</table></td>
+</td></tr>
+</table>
+</td>
+</tr>
+</table>
+</td></tr>
+
 
 <tr><td>
 <input type="submit" value='Change weights' name="weight_updates">
@@ -89,35 +181,25 @@
 <strong>Predicted topic:  </strong>
 {{ item.predicted_labels }}
 </p>
-
+<!--
 <p>
 <strong >Prediction margin:</strong> {{ item.class_proba }}
 </p>
+-->
 <p>
            {{ article }}
     </p>
 {% endfor %}
-  <div id="myDiv" style="width: 250px; height: 400px;"><!-- Plotly chart will be drawn inside this DIV --></div>
 
-  <script>
-
-    var data = [{
-  type: 'bar',
-  y: [ {% for key, value in topten.items() %} ' {{ key }} ', {% endfor %} ],
-  x: [ {% for key, value in topten.items() %} {{ value }}, {% endfor %} ],
-  orientation: 'h'
-}];
-
-var layout = { showlegend: false, ascending: true,
-  xaxis:{ side: 'top'},
-
-  autorange: 'reversed',
-  yanchor: 'top'};
-
-Plotly.newPlot('myDiv', data, layout, {staticPlot: true});
-  </script>
 
 <p> {{ feedback_given }} </p>
+
+
+<p>
+  
+
+
+</p>
 
 </div>
 

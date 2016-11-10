@@ -36,7 +36,7 @@ strong.narrow {}
 
 table {width: 300px;}
 
-table.table1 {background-color:#505050; width: 300px; align-items:"right"; border: solid; border-width: 2px; border-radius: 10px; 
+table.table1 {background-color:#505050; width: 400px; align-items:"right"; border: solid; border-width: 2px; border-radius: 10px; 
 border-color:white; padding: 3px}
 
 table.table2 { width: 150px; align-items:"left"; margin-top: 3px; float: top}
