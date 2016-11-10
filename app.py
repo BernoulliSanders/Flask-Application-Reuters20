@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, Markup
+from flask import Flask, render_template, request, Markup, session
 from wtforms import Form, TextAreaField, validators
 import pickle
 import sqlite3
@@ -10,6 +10,8 @@ import heapq
 from operator import itemgetter
 # import HashingVectorizer from local dir
 from vectorizer import vect, tokenizer
+from collections import OrderedDict
+from datetime import timedelta
 
 app = Flask(__name__)
 
@@ -37,12 +39,15 @@ ordered_weights_dict = pickle.load(open(os.path.join(cur_dir,'pkl_objects','orde
 # This is used to name new columns in the SQLite database
 count = 1
 
+feedback_given = 0
+
 # These are used to count the number of times the study has been started and to give the new tables a unique number
 active_l_participant_num = 0
 feature_f_participant_num = 0
 
 username = ""
 tablename = np.random.randint(0,1000000)
+
 
 '''
 def classify(document):
@@ -79,6 +84,10 @@ def train_model_v2():
 def feedback_count():
     global count
     count += 1
+
+def feedback_given_count():
+    global feedback_given
+    feedback_given += 1
 
 def active_l_participant_counter():
     global active_l_participant_num
@@ -360,6 +369,7 @@ def update_classifier_feedback_v2():
     train_model_v2()
     # Update class probabilities and labels for entire test set
     update_class_proba_feature(db2,count)
+    feedback_given_count()
     return render_template('thank-you.html')
 
 '''
@@ -420,7 +430,7 @@ def display_article():
     table_name = "active_learning_num"+str(active_l_participant_num)
     cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)), indexID FROM RCV1_test_X')
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
-    return render_template('article.html', items=items)
+    return render_template('article.html', items=items, feedback_given=feedback_given)
 
 # This displays the feature feedback application
 #@app.route('/article-with-reweighting')
@@ -442,16 +452,18 @@ def display_article_manual_reweighting(articleid):
     article = str(article)
     top_ten_from_article = look_up_word(tokenizer(article))
     for w in top_ten_from_article.keys():
-        article = article.replace(w, '<mark>'+w+'</mark>')
+        article = article.replace(' '+w+' ', ' <mark>'+w+'</mark> ')
+    article = article[3:-4] # This removes the quote marks
     article = Markup(article)
     pred_class = str(pred_class)
+    top_ten_from_article = OrderedDict(top_ten_from_article)
     #return top_ten_from_article
     if pred_class == "[('Defence',)]":
-        topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = False)[0:10])
-        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class, top_ten_from_article=top_ten_from_article, article=article)  
+        topten = OrderedDict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = False)[0:10])
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class, top_ten_from_article=top_ten_from_article, article=article, feedback_given=feedback_given)  
     else:
-        topten = dict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = True)[0:10])
-        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class,top_ten_from_article=top_ten_from_article, article=article)
+        topten = OrderedDict(sorted(weight_coef_dict.items(), key=itemgetter(1), reverse = True)[0:10])
+        return render_template('article-with-reweighting.html', items=items, form=form, articleid=articleid, topten=topten, pred_class=pred_class,top_ten_from_article=top_ten_from_article, article=article, feedback_given=feedback_given)
 
 
 # Vertical menu used in an iframe on the article-with-reweighting app
@@ -480,6 +492,10 @@ def display_app_at_random():
 
 @app.route('/')
 def welcome_page():
+    global count
+    count = 1
+    global feedback_given
+    feedback_given = 0
     form = ReviewForm(request.form)
     return render_template('opt-in.html', form=form)
 

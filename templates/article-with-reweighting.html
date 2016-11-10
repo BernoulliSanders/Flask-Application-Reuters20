@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>RCV1 Article</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
+    <script src="myjs.js"></script>
+
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
@@ -46,8 +48,8 @@
 </form>
 
 <tr><td colspan="2"></td></tr>
-<tr><th colspan="2">Add new words</th></tr>
-<tr><td colspan="2">If any would better describe the topic {% for item in items %} <strong>'{{item.predicted_labels }}' </strong>{% endfor %} than those above, enter them here</td></tr>
+<tr><th colspan="2">Optional: Add new words</th></tr>
+<tr><td colspan="2">If you can think of any words which would better describe the topic {% for item in items %} <strong>'{{item.predicted_labels }}' </strong>{% endfor %} than those above, enter them here (Multiple words permitted)</td></tr>
 <tr><td>
 <form method=post action="/add_new_instance">
       <dl>
@@ -95,23 +97,28 @@
            {{ article }}
     </p>
 {% endfor %}
-  <div id="myDiv" style="width: 480px; height: 400px;"><!-- Plotly chart will be drawn inside this DIV --></div>
+  <div id="myDiv" style="width: 250px; height: 400px;"><!-- Plotly chart will be drawn inside this DIV --></div>
 
   <script>
 
     var data = [{
   type: 'bar',
-  x: [ {% for key, value in topten.items() %} {{ value }}, {% endfor %} ],
   y: [ {% for key, value in topten.items() %} ' {{ key }} ', {% endfor %} ],
+  x: [ {% for key, value in topten.items() %} {{ value }}, {% endfor %} ],
   orientation: 'h'
 }];
 
-var layout = { showlegend: false};
+var layout = { showlegend: false, ascending: true,
+  xaxis:{ side: 'top'},
+
+  autorange: 'reversed',
+  yanchor: 'top'};
 
 Plotly.newPlot('myDiv', data, layout, {staticPlot: true});
-
-
   </script>
+
+<p> {{ feedback_given }} </p>
+
 </div>
 
 
