@@ -12,6 +12,7 @@
 <!--<h2>Choose article:</h2>-->
 <h2> Choose article:</h2>
 <iframe src="{{ url_for('display_headlines') }}" ></iframe>
+
 <table class="table1" style="float:right">
 {% from "_formhelpers.html" import render_field %}
 <tr><th colspan="2">
@@ -41,7 +42,7 @@ var data = [{
 
 var layout = { showlegend: false, ascending: true, paper_bgcolor: 'rgba(0,0,0,0)',
  margin: {
-    l: 60,
+    l: 80,
     r: 2,
     t: 2,b: 1
   },
@@ -61,9 +62,9 @@ Plotly.newPlot('myDiv', data, layout, {staticPlot: true});
  </table>
 </td>
 <td>
-<table class="table2">
+<table class="table3">
 {% for key, value in top_ten_from_article.items() %}
-<tr><td> {{ key }}
+<tr><td>
 <input type="radio" name="change_weight_overall_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
   <input type="radio" name="change_weight_overall_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
 </td></tr>
@@ -95,7 +96,7 @@ Plotly.newPlot('myDiv', data, layout, {staticPlot: true});
 
 var layout = { showlegend: false, ascending: true, paper_bgcolor: 'rgba(0,0,0,0)',
  margin: {
-    l: 60,
+    l: 80,
     r: 2,
     t: 2,b: 1
   },
@@ -118,10 +119,10 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
 
 
 <td>
-<table class="table2">
+<table class="table3">
 <tr><td>
 {% for key, value in topten.items() %}
-<tr><td><label for="weight">{{ key }}</label>
+<tr><td>
 <input type="radio" name="change_weight_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
   <input type="radio" name="change_weight_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
 </td></tr>
@@ -168,6 +169,8 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
     <input type="hidden" value=" {{ item.Headline }} " name="article_headline">
     <input type="hidden" value="{{ articleid }}" name="articleid">
     </form>
+    <br>
+    <strong>Feedback given: {{ feedback_given }} /30 </strong>
     </td>
 </div>
 </tr>
@@ -191,8 +194,6 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
     </p>
 {% endfor %}
 
-
-<p> {{ feedback_given }} </p>
 
 
 <p>

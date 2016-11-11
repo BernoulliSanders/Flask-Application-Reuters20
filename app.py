@@ -3,6 +3,7 @@ from wtforms import Form, TextAreaField, validators
 import pickle
 import sqlite3
 import os
+import re
 import numpy as np
 import pandas as pd
 import random
@@ -45,8 +46,11 @@ feedback_given = 0
 active_l_participant_num = 0
 feature_f_participant_num = 0
 
-username = np.random.randint(0,1000000)
+username = np.random.randint(0,100000000)
 
+table_name = ""
+
+train_set_name = ""
 
 '''
 def classify(document):
@@ -108,6 +112,7 @@ def new_table_active(path, username):
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
     conn.commit()
     conn.close()
+    create_new_training_set_table()
     return display_article()
 
 # Version 2 for feature feedback
@@ -122,15 +127,26 @@ def new_table_feature_feedback(path, username):
     c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
     conn.commit()
     conn.close()
+    create_new_training_set_table()
     # Return random article as the first one to be shown to the user. This function is only called once.
     return display_article_manual_reweighting(random.randrange(0, 1000))
+
+def create_new_training_set_table():
+    conn = sqlite3.connect('RCV1_train.sqlite')
+    c = conn.cursor()
+    global train_set_name
+    train_set_name = table_name+"training_set"
+    c.execute("CREATE TABLE "+train_set_name+"(ind INT, Headline TEXT, Text TEXT, Label INT, Full_Text TEXT)")
+    c.execute("INSERT INTO "+train_set_name+" SELECT * FROM RCV1_training_set")
+    conn.commit()
+    conn.close()
 
 # Add article to training set
 def add_to_training_set(index, Headline, Text, Label):
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
     Full_Text = Headline + " " + Text
-    c.execute('INSERT INTO RCV1_training_set VALUES (?, ?, ?, ?, ?)', (index, Headline, Text, Label, Full_Text))
+    c.execute("INSERT INTO "+train_set_name+" VALUES (?, ?, ?, ?, ?)", (index, Headline, Text, Label, Full_Text))
     conn.commit()
     conn.close()
     remove_from_test_set(index)
@@ -457,6 +473,7 @@ def display_article_manual_reweighting(articleid):
     top_ten_from_article = look_up_word(tokenizer(article), pred_class)
     for w in top_ten_from_article.keys():
         article = article.replace(' '+w+' ', ' <mark>'+w+'</mark> ')
+        #article = re.sub(' '+w+' ', ' <mark>'+w+'</mark> ', article, flags=re.IGNORECASE)
     article = article[3:-4] # This removes the quote marks
     article = Markup(article)
     if pred_class == "[('Defence',)]":
