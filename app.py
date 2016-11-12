@@ -9,7 +9,7 @@ import pandas as pd
 import random
 import heapq
 from operator import itemgetter
-# import HashingVectorizer from local dir
+# import vectorizer from local dir
 from vectorizer import vect, tokenizer
 from collections import OrderedDict
 from datetime import timedelta
@@ -17,16 +17,12 @@ from datetime import timedelta
 app = Flask(__name__)
 
 cur_dir = os.path.dirname(__file__)
-# Load classifier for active learning (uses hashing vectorizer)
+# Load classifier 
 clf = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
                  'RCV1_log_reg_GDEF_GDIS.pkl'), 'rb'))
 
-# Logistic regression with BOW representation of features for feature reweighting approach.
-# I need to make both of these variables stateful
-'''clf2 = pickle.load(open(os.path.join(cur_dir,
-                 'pkl_objects',
-                 'log_reg_BOW.pkl'), 'rb'))'''
+
 
 bow_vect = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
@@ -52,28 +48,14 @@ table_name = ""
 
 train_set_name = ""
 
-'''
-def classify(document):
-    label = {0: 'negative', 1: 'positive'}
-    X = vect.transform([document])
-    y = clf.predict(X)[0]
-    proba = np.max(clf.predict_proba(X))
-    return label[y], proba
-'''
 
-# Need to update to include headline
-'''
-def train_model(document, y):
-    X = bow_vect.transform([document])
-    clf.partial_fit(X, [y])
-'''
 # To be used for feature reweighting approach (feature matrix is bag of words so that individual words can be reweighted)
 def train_model_v2():
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
-    X = pd.read_sql("SELECT Headline, Text FROM RCV1_training_set;",conn)
+    X = pd.read_sql("SELECT Full_Text FROM RCV1_training_set;",conn)
     # Update this later to get the headline back in - fit transform wasn't working with two parameters
-    X = bow_vect.fit_transform(X['Text'])
+    X = bow_vect.fit_transform(X['Full_Text'])
     y = pd.read_sql("SELECT label FROM RCV1_training_set;",conn)
     clf.fit(X, y.values.ravel())
     conn.close()
@@ -92,6 +74,7 @@ def feedback_given_count():
     global feedback_given
     feedback_given += 1
 
+'''
 def active_l_participant_counter():
     global active_l_participant_num
     active_l_participant_num += 1
@@ -99,13 +82,15 @@ def active_l_participant_counter():
 def feature_f_participant_counter():
     global feature_f_participant_num
     feature_f_participant_num += 1
+'''
+
 
 #### To be called whenever someone clicks they accept the T&C's on the welcome page, creating a new table
 # Version 1 for active learning
 def new_table_active(path, username):
     conn = sqlite3.connect(path)
     c = conn.cursor()
-    active_l_participant_counter()
+    # active_l_participant_counter()
     global table_name
     table_name = "active_learning_"+str(username)
     c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
@@ -119,7 +104,7 @@ def new_table_active(path, username):
 def new_table_feature_feedback(path, username):
     conn = sqlite3.connect(path)
     c = conn.cursor()
-    feature_f_participant_counter()
+    # feature_f_participant_counter()
     create_reweighting_table(username)
     global table_name
     table_name = "feature_feedback_"+str(username)
@@ -131,6 +116,7 @@ def new_table_feature_feedback(path, username):
     # Return random article as the first one to be shown to the user. This function is only called once.
     return display_article_manual_reweighting(random.randrange(0, 1000))
 
+#This copies the original training set and adds newly labelled instances to it. One table per participant.
 def create_new_training_set_table():
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
@@ -159,6 +145,7 @@ def remove_from_test_set(index):
     conn.commit()
     conn.close()
 
+# This tracks the feature feedback given by the participant
 def create_reweighting_table(username):
     conn = sqlite3.connect('RCV1.sqlite')
     c = conn.cursor()
@@ -166,15 +153,8 @@ def create_reweighting_table(username):
     c.execute("CREATE TABLE "+table_name+"(word TEXT, change TEXT)")
     conn.commit()
     conn.close()
-'''    
-def insert_into_reweighting_table(weight,updated_weight):
-    conn = sqlite3.connect('RCV1.sqlite')
-    c = conn.cursor()
-    table_name = "weights_changed_"+str(username)
-    c.execute("INSERT INTO "+table_name+" VALUES (?,?)", (weight, updated_weight))
-    conn.commit()
-    conn.close()
-'''
+
+
 def insert_into_reweighting_table(feedback):
     conn = sqlite3.connect('RCV1.sqlite')
     c = conn.cursor()
@@ -187,7 +167,7 @@ def insert_into_reweighting_table(feedback):
 def insert_new_instance(article_id, new_instance, label):
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
-    c.execute('INSERT INTO RCV1_training_set VALUES (?,?,?,?,?)', (article_id, "NaN", "NaN", label, new_instance))
+    c.execute("INSERT INTO "+train_set_name+" VALUES (?,?,?,?,?)", (article_id, 0, 0, label, new_instance))
     conn.commit()
     conn.close()
 
@@ -246,14 +226,6 @@ def update_class_proba_feature(path,count):
     conn.commit()
     conn.close()
 
-# This is to store the actual instance feedback given by a user
-'''
-def track_instance_feedback(y):
-    feedback = {"incorrect": 0, "correct": 1}
-    conn = sqlite3.connect(db2)
-    c = conn.cursor()
-    c.execute('INSERT feedback INTO ???? WHERE ?????')
-'''
 
 ###### End user feature feedback #######
 
@@ -293,7 +265,8 @@ def increase_weight_in_weights_dict_perc(word, percentage):
     else:
         ordered_weights_dict[word] = -10
 
-# Returns a list of tuples of the top 10 weights in the string, used to find top ten weights   
+
+# Returns a list of tuples of the top 10 weights in the string, used to find top ten weights for the article currently being displayed to the end user   
 def look_up_word(article, pred_class):
     matching_iloc = []
     matching_word = []
@@ -305,7 +278,6 @@ def look_up_word(article, pred_class):
     for word in matching_iloc:
             matching_weights.append(clf.coef_[0][word])
     weights_dict = dict(zip(matching_word,matching_weights))
-    #weights_dict = sorted(weights_dict.items(),reverse=True)
     if pred_class == "[('Defence',)]":
         weights_dict = dict(sorted(weights_dict.items(), key=itemgetter(1), reverse = False)[0:10])
     else:
@@ -313,13 +285,8 @@ def look_up_word(article, pred_class):
     return weights_dict 
 
 
-###### Functions for sliders ######    
-'''
-def look_up_top_10_weights():
-    top10 = []
-    return heapq.nlargest(10, (clf.coef_[0]))
-'''
 
+###### Active learning #####
 ###### Uncertainty sampling #####
 def uncertainty_sample(class_proba):
     uncertainty = abs(class_proba - 0.5)
@@ -330,6 +297,8 @@ def uncertainty_sample_chopped(class_proba):
     uncertainty = abs(class_proba - 0.5)
     uncertainty = str(uncertainty)[:4]
     return uncertainty
+
+
 
 ### Forms
 class ReviewForm(Form):
@@ -346,103 +315,33 @@ class ReviewForm(Form):
                                 [validators.DataRequired(),
                                 validators.length(min=1)])
 
+
+
+##### ##### ##### ##### #####
 #### Flask functions ######
 
-# This is called when the user clicks correct or incorrect in the active learning version
-@app.route('/update', methods=['POST'])
-def update_classifier_feedback():
-    feedback = request.form['update_classifier']
-    article = request.form['uncertain_article']
-    prediction = request.form['prediction']
-    headline = request.form['article_headline']
-    articleid = request.form['articleid']
-    inv_label = {"Defence": 0, "Environment and natural world": 1}
-    y = inv_label[prediction]
-    # track_instance_feedback(y)
-    if feedback == 'Incorrect':
-        y = int(not(y))
-    add_to_training_set(articleid,headline,article,y)
-    # Retrain model with uncertain article and new (or same as before) label - should really update this to incorporate the headline too.
-    train_model_v2()
-    # Update class probabilities and labels for entire test set
-    update_class_proba_active(db2,count)
-    return render_template('thanks.html')
+# First function called when a user views the base URL
+@app.route('/')
+def welcome_page():
+    global count
+    count = 1
+    global feedback_given
+    feedback_given = 0
+    form = ReviewForm(request.form)
+    return render_template('opt-in.html', form=form)
 
-# This is called when the user clicks correct or incorrect on the feature reweighting version
-@app.route('/update-v2', methods=['POST'])
-def update_classifier_feedback_v2():
-    feedback = request.form['update_classifier']
-    article = request.form['uncertain_article']
-    headline = request.form['article_headline']
-    prediction = request.form['prediction']
-    articleid = request.form['articleid']
-    inv_label = {"Defence": 0, "Environment and natural world": 1}
-    y = inv_label[prediction]
-    # track_instance_feedback(y)
-    if feedback == 'Incorrect':
-        y = int(not(y))
-    # Add newly labelled article to training set
-    add_to_training_set(articleid,headline,article,y)
-    # Retrain model with uncertain article and new (or same as before) label
-    train_model_v2()
-    # Update class probabilities and labels for entire test set
-    update_class_proba_feature(db2,count)
-    feedback_given_count()
-    return render_template('thank-you.html')
-
-'''
-@app.route('/change-weights', methods=['POST'])
-def show_weights():
-    feedback_list = []
-    feedback_1 = request.form['change_weight_1']
-    feedback_list.append(feedback_1)
-    feedback_2 = request.form['change_weight_2']
-    feedback_list.append(feedback_2)
-    #feedback = request.form['weight_updates']
-    feedback_list = str(feedback_list)
-    return feedback_list
-'''
-@app.route('/change-weights', methods=['POST'])
-def show_weights():
-    feedback_list = []
-    for i in range(1,11):
-        feedback = request.form['change_weight_'+str(i)]
-        feedback_list.append(feedback)
-    for i in range(1,11):
-        feedback = request.form['change_weight_overall_'+str(i)]
-        feedback_list.append(feedback)
-    #feedback_2 = request.form['change_weight_2']
-    #feedback_list.append(feedback_2)
-    #feedback = request.form['weight_updates']
-    insert_into_reweighting_table(feedback_list)
-    feedback_list = str(feedback_list)
-    return feedback_list
-
-'''
-@app.route('/change-weights', methods=['POST'])
-def manually_change_weights():
-    # This pulls the contents from the feature_feedback form in article-with-reweighting
-    feedback = request.form['feature_feedback']
-    # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
-    increase_weight_in_weight_dict(feedback)
-    increase_weight(look_up_weight(feedback)) 
-    return render_template('thank-you.html')
-'''
-
-#This changes the weight by the percentage in the form, then returns the same article after the feedback is submitted
-@app.route('/add_new_instance', methods=['POST'])
-def retrieve_new_instance():
-    feedback = request.form['new_instance']
-    articleid = request.form['articleid']
-    prediction = request.form['prediction']
-    submit = request.form['submit_new_instance']
-    insert_new_instance(articleid,feedback,prediction)
-    return display_article_manual_reweighting(articleid)
+# This assigns a user to one or other study at random
+@app.route('/study', methods=['POST'])
+def display_app_at_random():
+    page = random.randrange(0, 2)
+    if page == 0:
+        return new_table_active(db2, username)
+    else:
+        return new_table_feature_feedback(db2, username)
 
 
-# This displays the active learning application. This function uses the uncertainty_query function defined above and uses it in a
+# This displays the active learning version. This function uses the uncertainty_query function defined above and uses it in a
 # SQL SELECT query to display to the user the article which the model is most uncertain about
-# thanks.html leads here
 @app.route('/article')
 def display_article():
     conn = sqlite3.connect(db2)
@@ -502,24 +401,101 @@ def display_headlines():
     menu_items = [dict(Headline=row[0], class_proba=row[1], predicted_labels=row[2][:11], indexID=row[3]) for row in cursor.fetchall()]
     return render_template('menu.html', items=menu_items)
 
-# This assigns a user to one or other study at random
-@app.route('/study', methods=['POST'])
-def display_app_at_random():
-    page = random.randrange(0, 2)
-    if page == 0:
-        return new_table_active(db2, username)
-    else:
-        return new_table_feature_feedback(db2, username)
 
-@app.route('/')
-def welcome_page():
-    global count
-    count = 1
-    global feedback_given
-    feedback_given = 0
-    form = ReviewForm(request.form)
-    return render_template('opt-in.html', form=form)
+# This is called when the user clicks correct or incorrect in the active learning version
+@app.route('/update', methods=['POST'])
+def update_classifier_feedback():
+    feedback = request.form['update_classifier']
+    article = request.form['uncertain_article']
+    prediction = request.form['prediction']
+    headline = request.form['article_headline']
+    articleid = request.form['articleid']
+    inv_label = {"Defence": 0, "Environment and natural world": 1}
+    y = inv_label[prediction]
+    # track_instance_feedback(y)
+    if feedback == 'Incorrect':
+        y = int(not(y))
+    add_to_training_set(articleid,headline,article,y)
+    # Retrain model with uncertain article and new (or same as before) label - should really update this to incorporate the headline too.
+    train_model_v2()
+    # Update class probabilities and labels for entire test set
+    update_class_proba_active(db2,count)
+    return render_template('thanks.html')
 
+# This is called when the user clicks correct or incorrect on the feature reweighting version
+@app.route('/update-v2', methods=['POST'])
+def update_classifier_feedback_v2():
+    feedback = request.form['update_classifier']
+    article = request.form['uncertain_article']
+    headline = request.form['article_headline']
+    prediction = request.form['prediction']
+    articleid = request.form['articleid']
+    inv_label = {"Defence": 0, "Environment and natural world": 1}
+    y = inv_label[prediction]
+    # track_instance_feedback(y)
+    if feedback == 'Incorrect':
+        y = int(not(y))
+    # Add newly labelled article to training set
+    add_to_training_set(articleid,headline,article,y)
+    # Retrain model with uncertain article and new (or same as before) label
+    train_model_v2()
+    # Update class probabilities and labels for entire test set
+    update_class_proba_feature(db2,count)
+    feedback_given_count()
+    return render_template('thank-you.html')
+
+'''
+@app.route('/change-weights', methods=['POST'])
+def show_weights():
+    feedback_list = []
+    feedback_1 = request.form['change_weight_1']
+    feedback_list.append(feedback_1)
+    feedback_2 = request.form['change_weight_2']
+    feedback_list.append(feedback_2)
+    #feedback = request.form['weight_updates']
+    feedback_list = str(feedback_list)
+    return feedback_list
+'''
+
+# This retrieves the user feedback on features
+@app.route('/change-weights', methods=['POST'])
+def show_weights():
+    feedback_list = []
+    for i in range(1,11):
+        feedback = request.form['change_weight_'+str(i)]
+        feedback_list.append(feedback)
+    for i in range(1,11):
+        feedback = request.form['change_weight_overall_'+str(i)]
+        feedback_list.append(feedback)
+    #feedback_2 = request.form['change_weight_2']
+    #feedback_list.append(feedback_2)
+    #feedback = request.form['weight_updates']
+    insert_into_reweighting_table(feedback_list)
+    feedback_list = str(feedback_list)
+    return feedback_list
+
+'''
+@app.route('/change-weights', methods=['POST'])
+def manually_change_weights():
+    # This pulls the contents from the feature_feedback form in article-with-reweighting
+    feedback = request.form['feature_feedback']
+    # look_up_weight finds the index location of the weight in the weight vector, increase_weight increases it
+    increase_weight_in_weight_dict(feedback)
+    increase_weight(look_up_weight(feedback)) 
+    return render_template('thank-you.html')
+'''
+
+# This adds the new words as a labelled instance
+@app.route('/add_new_instance', methods=['POST'])
+def retrieve_new_instance():
+    feedback = request.form['new_instance']
+    articleid = request.form['articleid']
+    prediction = request.form['prediction']
+    inv_label = {"Defence": 0, "Environment and natural world": 1}
+    y = inv_label[prediction]
+    submit = request.form['submit_new_instance']
+    insert_new_instance(articleid,feedback,y)
+    return display_article_manual_reweighting(articleid)
 
 if __name__ == '__main__':
     app.run(debug=True)
