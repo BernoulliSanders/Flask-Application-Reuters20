@@ -49,14 +49,13 @@ table_name = ""
 train_set_name = ""
 
 
-# To be used for feature reweighting approach (feature matrix is bag of words so that individual words can be reweighted)
 def train_model_v2():
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
-    X = pd.read_sql("SELECT Full_Text FROM RCV1_training_set;",conn)
-    # Update this later to get the headline back in - fit transform wasn't working with two parameters
+    # Need to update this so that it's taken from the table variable name
+    X = pd.read_sql("SELECT Full_Text FROM "+train_set_name+";",conn)
     X = bow_vect.fit_transform(X['Full_Text'])
-    y = pd.read_sql("SELECT label FROM RCV1_training_set;",conn)
+    y = pd.read_sql("SELECT label FROM "+train_set_name+";",conn)
     clf.fit(X, y.values.ravel())
     conn.close()
     dest = os.path.join('pkl_objects')
@@ -150,17 +149,17 @@ def create_reweighting_table(username):
     conn = sqlite3.connect('RCV1.sqlite')
     c = conn.cursor()
     table_name = "weights_changed_"+str(username)
-    c.execute("CREATE TABLE "+table_name+"(word TEXT, change TEXT)")
+    c.execute("CREATE TABLE "+table_name+"(change TEXT, word TEXT, feedback_iteration INT)")
     conn.commit()
     conn.close()
 
 
-def insert_into_reweighting_table(feedback):
+def insert_into_reweighting_table(feedback, count):
     conn = sqlite3.connect('RCV1.sqlite')
     c = conn.cursor()
     table_name = "weights_changed_"+str(username)
     words = [tuple(x.split(' ')) for x in feedback]
-    c.executemany("INSERT INTO "+table_name+" (word,change) VALUES (?,?)", words)
+    c.executemany("INSERT INTO "+table_name+" (word,change) VALUES (?,?,?)", words, count)
     conn.commit()
     conn.close()
 
@@ -347,8 +346,8 @@ def display_article():
     conn = sqlite3.connect(db2)
     conn.create_function("uncertainty_query",1,uncertainty_sample)
     c = conn.cursor()
-    table_name = "active_learning_num"+str(active_l_participant_num)
-    cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)), indexID FROM RCV1_test_X')
+    #table_name = "active_learning_num"+str(active_l_participant_num)
+    cursor = c.execute('SELECT predicted_labels, Headline, Text, MIN(uncertainty_query(class_proba)), indexID FROM '+table_name+';')
     items = [dict(predicted_labels=row[0], Headline=row[1], Text=row[2], class_proba=row[3], indexID=row[4]) for row in cursor.fetchall()]
     return render_template('article.html', items=items, feedback_given=feedback_given)
 
@@ -371,8 +370,8 @@ def display_article_manual_reweighting(articleid):
     pred_class = str(pred_class)
     top_ten_from_article = look_up_word(tokenizer(article), pred_class)
     for w in top_ten_from_article.keys():
-        article = article.replace(' '+w+' ', ' <mark>'+w+'</mark> ')
-        #article = re.sub(' '+w+' ', ' <mark>'+w+'</mark> ', article, flags=re.IGNORECASE)
+        #article = article.replace(' '+w+' ', ' <mark>'+w+'</mark> ')
+        article = re.sub(' '+w+' ', ' <mark>'+w+'</mark> ', article, flags=re.IGNORECASE)
     article = article[3:-4] # This removes the quote marks
     article = Markup(article)
     if pred_class == "[('Defence',)]":
@@ -397,7 +396,7 @@ def display_headlines():
     # conn.create_function("ignore_sign", 1, abs)
     conn.create_function("uncertainty_query", 1, uncertainty_sample_chopped)
     c = conn.cursor()
-    cursor = c.execute('SELECT Headline, uncertainty_query(class_proba), predicted_labels, indexID FROM RCV1_test_X ORDER BY uncertainty_query(class_proba) ASC;')
+    cursor = c.execute('SELECT Headline, uncertainty_query(class_proba), predicted_labels, indexID FROM '+table_name+' ORDER BY uncertainty_query(class_proba) ASC;')
     menu_items = [dict(Headline=row[0], class_proba=row[1], predicted_labels=row[2][:11], indexID=row[3]) for row in cursor.fetchall()]
     return render_template('menu.html', items=menu_items)
 
@@ -435,6 +434,7 @@ def update_classifier_feedback_v2():
     # track_instance_feedback(y)
     if feedback == 'Incorrect':
         y = int(not(y))
+    # article = article + request.form['new_instance']
     # Add newly labelled article to training set
     add_to_training_set(articleid,headline,article,y)
     # Retrain model with uncertain article and new (or same as before) label
@@ -470,7 +470,7 @@ def show_weights():
     #feedback_2 = request.form['change_weight_2']
     #feedback_list.append(feedback_2)
     #feedback = request.form['weight_updates']
-    insert_into_reweighting_table(feedback_list)
+    insert_into_reweighting_table(feedback_list, count)
     feedback_list = str(feedback_list)
     return feedback_list
 
@@ -496,6 +496,9 @@ def retrieve_new_instance():
     submit = request.form['submit_new_instance']
     insert_new_instance(articleid,feedback,y)
     return display_article_manual_reweighting(articleid)
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
