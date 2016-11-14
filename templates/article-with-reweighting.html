@@ -66,6 +66,7 @@ Plotly.newPlot('myDiv', data, layout, {staticPlot: true});
 {% for key, value in top_ten_from_article.items() %}
 <tr><td>
 <input type="radio" name="change_weight_overall_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
+<input type="radio" name="change_weight_overall_{{ loop.index }}" value="ignore {{ key }}" checked><strong>=</strong>
   <input type="radio" name="change_weight_overall_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
 </td></tr>
 {% endfor %} 
@@ -124,6 +125,7 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
 {% for key, value in topten.items() %}
 <tr><td>
 <input type="radio" name="change_weight_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
+<input type="radio" name="change_weight_{{ loop.index }}" value="ignore {{ key }}" checked> <strong>=</strong>
   <input type="radio" name="change_weight_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
 </td></tr>
 {% endfor %}
@@ -144,25 +146,14 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
 <tr><th colspan="2">Optional: Add new words</th></tr>
 <tr><td colspan="2">If you can think of any words which would better describe the topic {% for item in items %} <strong>'{{item.predicted_labels }}' </strong>{% endfor %} than those above, enter them here (Multiple words permitted)</td></tr>
 <tr><td>
-<form method=post action="/add_new_instance">
-      <dl>
- Words: {{ render_field(form.new_instance, cols='30', rows='1') }}
- 
-  </dl>
-  </td>
-  <td>
-  {% for item in items %}
-    <input type=submit value='Submit feedback' name='submit_new_instance'>
-      <input type="hidden" value='{{ form.new_instance }}' name='new_instance'>
-    <input type="hidden" value="{{ articleid }}" name="articleid">
-        <input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
-</form>
-</td></tr>
-<tr><td>
-
-<div id='button'>
     <form action="/update-v2" method="post">
-      <input type=submit value='Correct' name='update_classifier'>
+<dl>
+ Words: {{ render_field(form.new_instance, cols='30', rows='1') }}
+  </dl>
+    {% for item in items %}
+<div id='button'>
+    <input type="hidden" value='{{ form.new_instance }}' name='new_instance'>
+    <input type=submit value='Correct' name='update_classifier'>
     <input type=submit value='Incorrect' name='update_classifier'>
     <input type=hidden value='{{ item.predicted_labels }}' name='prediction'>
     <input type=hidden value='{{ item.Text }}' name='uncertain_article'>
@@ -194,17 +185,7 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
     </p>
 {% endfor %}
 
-
-
-<p>
-  
-
-
-</p>
-
 </div>
-
-
 
   </body>
 </html>

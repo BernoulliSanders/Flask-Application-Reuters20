@@ -18,10 +18,11 @@ app = Flask(__name__)
 
 cur_dir = os.path.dirname(__file__)
 # Load classifier 
-clf = pickle.load(open(os.path.join(cur_dir,
+pre_study_clf = pickle.load(open(os.path.join(cur_dir,
                  'pkl_objects',
                  'RCV1_log_reg_GDEF_GDIS.pkl'), 'rb'))
 
+clf = pre_study_clf
 
 
 bow_vect = pickle.load(open(os.path.join(cur_dir,
@@ -31,7 +32,7 @@ bow_vect = pickle.load(open(os.path.join(cur_dir,
 # Read in unlabelled pool of 1000 articles from RCV1
 db2 = os.path.join(cur_dir, 'RCV1.sqlite')
 
-ordered_weights_dict = pickle.load(open(os.path.join(cur_dir,'pkl_objects','ordered_weights_dict.pkl'), 'rb'))
+ordered_weights_dict = pickle.load(open(os.path.join(cur_dir, 'pkl_objects', 'ordered_weights_dict.pkl'), 'rb'))
 
 # This is used to name new columns in the SQLite database
 count = 1
@@ -42,7 +43,7 @@ feedback_given = 0
 active_l_participant_num = 0
 feature_f_participant_num = 0
 
-username = np.random.randint(0,100000000)
+username = np.random.randint(0, 100000000)
 
 table_name = ""
 
@@ -53,7 +54,7 @@ def train_model_v2():
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
     # Need to update this so that it's taken from the table variable name
-    X = pd.read_sql("SELECT Full_Text FROM "+train_set_name+";",conn)
+    X = pd.read_sql("SELECT Full_Text FROM "+train_set_name+";", conn)
     X = bow_vect.fit_transform(X['Full_Text'])
     y = pd.read_sql("SELECT label FROM "+train_set_name+";",conn)
     clf.fit(X, y.values.ravel())
@@ -113,7 +114,7 @@ def new_table_feature_feedback(path, username):
     conn.close()
     create_new_training_set_table()
     # Return random article as the first one to be shown to the user. This function is only called once.
-    return display_article_manual_reweighting(random.randrange(0, 1000))
+    return display_article_manual_reweighting(random.randrange(0, 500))
 
 #This copies the original training set and adds newly labelled instances to it. One table per participant.
 def create_new_training_set_table():
@@ -149,17 +150,17 @@ def create_reweighting_table(username):
     conn = sqlite3.connect('RCV1.sqlite')
     c = conn.cursor()
     table_name = "weights_changed_"+str(username)
-    c.execute("CREATE TABLE "+table_name+"(change TEXT, word TEXT, feedback_iteration INT)")
+    c.execute("CREATE TABLE "+table_name+"(word TEXT, change TEXT, feedback_iteration INT)")
     conn.commit()
     conn.close()
 
 
-def insert_into_reweighting_table(feedback, count):
+def insert_into_reweighting_table(feedback):
     conn = sqlite3.connect('RCV1.sqlite')
     c = conn.cursor()
     table_name = "weights_changed_"+str(username)
     words = [tuple(x.split(' ')) for x in feedback]
-    c.executemany("INSERT INTO "+table_name+" (word,change) VALUES (?,?,?)", words, count)
+    c.executemany("INSERT INTO "+table_name+" (word, change, feedback_iteration) VALUES (?,?,?)", words)
     conn.commit()
     conn.close()
 
@@ -182,7 +183,7 @@ def update_class_proba_active(path,count):
     # Calculate new class probabilities
     new_proba = list(float(z) for z in clf.predict_proba(X)[:, 1])
     IDs = list(int(zz) for zz in np.arange(0, 1000, 1))
-    new_proba_tuple = list(zip(new_proba,IDs))
+    new_proba_tuple = list(zip(new_proba, IDs))
     # Update predicted classes for unlabelled pool
     new_class = list(int(xy) for xy in clf.predict(X))
     new_class_tuple = list(zip(new_class,IDs))
@@ -429,12 +430,13 @@ def update_classifier_feedback_v2():
     headline = request.form['article_headline']
     prediction = request.form['prediction']
     articleid = request.form['articleid']
+    new_words = request.form['new_instance']
     inv_label = {"Defence": 0, "Environment and natural world": 1}
     y = inv_label[prediction]
     # track_instance_feedback(y)
     if feedback == 'Incorrect':
         y = int(not(y))
-    # article = article + request.form['new_instance']
+    article = article + " " + new_words
     # Add newly labelled article to training set
     add_to_training_set(articleid,headline,article,y)
     # Retrain model with uncertain article and new (or same as before) label
@@ -463,16 +465,19 @@ def show_weights():
     feedback_list = []
     for i in range(1,11):
         feedback = request.form['change_weight_'+str(i)]
-        feedback_list.append(feedback)
+        if "ignore" not in feedback:
+            feedback_list.append(feedback + " " + str(count))
     for i in range(1,11):
         feedback = request.form['change_weight_overall_'+str(i)]
-        feedback_list.append(feedback)
+        if "ignore" not in feedback:
+            feedback_list.append(feedback + " " + str(count))
     #feedback_2 = request.form['change_weight_2']
     #feedback_list.append(feedback_2)
     #feedback = request.form['weight_updates']
-    insert_into_reweighting_table(feedback_list, count)
-    feedback_list = str(feedback_list)
-    return feedback_list
+    insert_into_reweighting_table(feedback_list)
+    #feedback_list = str(feedback_list)
+    #return feedback_list
+
 
 '''
 @app.route('/change-weights', methods=['POST'])
@@ -496,7 +501,6 @@ def retrieve_new_instance():
     submit = request.form['submit_new_instance']
     insert_new_instance(articleid,feedback,y)
     return display_article_manual_reweighting(articleid)
-
 
 
 
