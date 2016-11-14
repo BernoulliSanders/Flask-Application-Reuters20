@@ -9,10 +9,10 @@ import pandas as pd
 import random
 import heapq
 from operator import itemgetter
-# import vectorizer from local dir
 from vectorizer import vect, tokenizer
 from collections import OrderedDict
 from datetime import timedelta
+import random
 
 app = Flask(__name__)
 
@@ -32,7 +32,7 @@ bow_vect = pickle.load(open(os.path.join(cur_dir,
 # Read in unlabelled pool of 1000 articles from RCV1
 db2 = os.path.join(cur_dir, 'RCV1.sqlite')
 
-ordered_weights_dict = pickle.load(open(os.path.join(cur_dir, 'pkl_objects', 'ordered_weights_dict.pkl'), 'rb'))
+#ordered_weights_dict = pickle.load(open(os.path.join(cur_dir, 'pkl_objects', 'ordered_weights_dict.pkl'), 'rb'))
 
 # This is used to name new columns in the SQLite database
 count = 1
@@ -62,8 +62,8 @@ def train_model_v2():
     dest = os.path.join('pkl_objects')
     if not os.path.exists(dest):
         os.makedirs(dest)
-    pickle.dump(bow_vect,open(os.path.join(dest, 'TF_IDF_vect.pkl'), 'wb'), protocol=4)
-    pickle.dump(clf,open(os.path.join(dest, 'RCV1_log_reg_GDEF_GDIS.pkl'), 'wb'), protocol=4)
+    pickle.dump(bow_vect,open(os.path.join(dest, 'TF_IDF_vect'+str(username)+'.pkl'), 'wb'), protocol=4)
+    pickle.dump(clf,open(os.path.join(dest, 'RCV1_log_reg_GDEF_GDIS'+str(username)+'.pkl'), 'wb'), protocol=4)
 
 
 def feedback_count():
@@ -341,17 +341,20 @@ def welcome_page():
     count = 1
     global feedback_given
     feedback_given = 0
-    form = ReviewForm(request.form)
-    return render_template('opt-in.html', form=form)
+    return render_template('opt-in.html')
 
 # This assigns a user to one or other study at random
 @app.route('/study', methods=['POST'])
 def display_app_at_random():
-    page = random.randrange(0, 2)
+    checkbox = request.form['age']
+    if checkbox == "confirmed":
+        page = random.randrange(0, 2)
     if page == 0:
         return new_table_active(db2, username)
-    else:
+    elif page == 1:
         return new_table_feature_feedback(db2, username)
+    else:
+        return render_template('opt-in.html')
 
 
 # This displays the active learning version. This function uses the uncertainty_query function defined above and uses it in a

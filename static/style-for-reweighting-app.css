@@ -22,7 +22,7 @@ h3 {width:420px; font:"Helvetica Neue";}
 
 .narrow {width: 420px; float: right;}
 
-p {width:500px; font:"Comic Sans MS";}
+p {width:800px; font:"Comic Sans MS";}
 
 p.narrow {float: right;}
 
@@ -31,6 +31,8 @@ p.ital {font-style: italic; width:200px; background-color: #669999;}
 p.strong {font-style: bold; width:280px;}
 
 a {color:white;}
+
+a.email {color:blue;}
 
 strong.narrow {}
 

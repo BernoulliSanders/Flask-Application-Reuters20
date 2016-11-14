@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Participant instructions</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
+</head>
+<body>
+<p>
+The algorithm has seen two articles, one about “”, the other not. Your objective here is to ‘teach’ the algorithm what the topic is about, so that it can successfully predict whether new articles are about the topic or not.</p>
+<p>
+You can do this by means of stating whether you think its predictions are correct or incorrect, and additionally by giving feedback on specific words.
+</p>
+<p>
+Ten words will be highlighted in yellow. These are the 10 words which the system places the most importance on when making its prediction as to whether the article is about this topic or not.</p>
+<p>
+If you see another word in the text which you would expect to be strongly associated with the predicted topic which is NOT highlighted (for example, ‘earthquake’ for the topic ‘Disasters’), then please enter it under ‘Add new words’.
+Please only do this if you deem it necessary.
+</p>
+
+</body>
+</html>
