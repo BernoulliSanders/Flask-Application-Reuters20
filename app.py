@@ -151,6 +151,8 @@ def create_reweighting_table(username):
     c = conn.cursor()
     table_name = "weights_changed_"+str(username)
     c.execute("CREATE TABLE "+table_name+"(word TEXT, change TEXT, feedback_iteration INT)")
+    new_words_table = "new_words_added_"+str(username)
+    c.execute("CREATE TABLE "+new_words_table+"(word TEXT, label TEXT, feedback_iteration INT)")
     conn.commit()
     conn.close()
 
@@ -164,12 +166,24 @@ def insert_into_reweighting_table(feedback):
     conn.commit()
     conn.close()
 
+def insert_into_new_words_added_table(word,label,feedback_count):
+    conn = sqlite3.connect('RCV1.sqlite')
+    c = conn.cursor()
+    table_name = "new_words_added_"+str(username)
+    c.execute("INSERT INTO "+table_name+" (word, label, feedback_iteration) VALUES (?,?,?)", (word, label, feedback_count))
+    conn.commit()
+    conn.close()
+
+
+'''
 def insert_new_instance(article_id, new_instance, label):
     conn = sqlite3.connect('RCV1_train.sqlite')
     c = conn.cursor()
     c.execute("INSERT INTO "+train_set_name+" VALUES (?,?,?,?,?)", (article_id, 0, 0, label, new_instance))
     conn.commit()
     conn.close()
+'''
+
 
 '''This vectorizes all articles, calculates the updated probabilities, 
 updates the class probabilities, and adds a new column for each piece 
@@ -444,7 +458,21 @@ def update_classifier_feedback_v2():
     # Update class probabilities and labels for entire test set
     update_class_proba_feature(db2,count)
     feedback_given_count()
-    return render_template('thank-you.html')
+    feedback_list = []
+    for i in range(1,11):
+        feedback = request.form['change_weight_'+str(i)]
+        if "ignore" not in feedback:
+            feedback_list.append(feedback + " " + str(count))
+    for i in range(1,11):
+        feedback = request.form['change_weight_overall_'+str(i)]
+        if "ignore" not in feedback:
+            feedback_list.append(feedback + " " + str(count))
+    insert_into_reweighting_table(feedback_list)
+    if len(new_words) > 0:
+        insert_into_new_words_added_table(new_words,y,count)
+        return render_template('thank-you.html')
+    else:
+        return render_template('thank-you.html')
 
 '''
 @app.route('/change-weights', methods=['POST'])
@@ -460,6 +488,7 @@ def show_weights():
 '''
 
 # This retrieves the user feedback on features
+'''
 @app.route('/change-weights', methods=['POST'])
 def show_weights():
     feedback_list = []
@@ -477,7 +506,7 @@ def show_weights():
     insert_into_reweighting_table(feedback_list)
     #feedback_list = str(feedback_list)
     #return feedback_list
-
+'''
 
 '''
 @app.route('/change-weights', methods=['POST'])
@@ -489,7 +518,7 @@ def manually_change_weights():
     increase_weight(look_up_weight(feedback)) 
     return render_template('thank-you.html')
 '''
-
+'''
 # This adds the new words as a labelled instance
 @app.route('/add_new_instance', methods=['POST'])
 def retrieve_new_instance():
@@ -501,7 +530,7 @@ def retrieve_new_instance():
     submit = request.form['submit_new_instance']
     insert_new_instance(articleid,feedback,y)
     return display_article_manual_reweighting(articleid)
-
+'''
 
 
 if __name__ == '__main__':

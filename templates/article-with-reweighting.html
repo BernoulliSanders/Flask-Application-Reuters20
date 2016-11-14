@@ -21,7 +21,7 @@
  Top 10 words from this topic:
 </th></tr>
 <tr><td>
-<form method=post action="/change-weights">
+<form action="/update-v2" method="post">
 <table class="table2">
 <th colspan="2">This article:</th>
 <tr>
@@ -137,16 +137,12 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
 </td></tr>
 
 
-<tr><td>
-<input type="submit" value='Change weights' name="weight_updates">
-</td></tr>
-</form>
 
 <tr><td colspan="2"></td></tr>
 <tr><th colspan="2">Optional: Add new words</th></tr>
 <tr><td colspan="2">If you can think of any words which would better describe the topic {% for item in items %} <strong>'{{item.predicted_labels }}' </strong>{% endfor %} than those above, enter them here (Multiple words permitted)</td></tr>
 <tr><td>
-    <form action="/update-v2" method="post">
+
 <dl>
  Words: {{ render_field(form.new_instance, cols='30', rows='1') }}
   </dl>
