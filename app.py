@@ -85,36 +85,7 @@ def feature_f_participant_counter():
 '''
 
 
-#### To be called whenever someone clicks they accept the T&C's on the welcome page, creating a new table
-# Version 1 for active learning
-def new_table_active(path, username):
-    conn = sqlite3.connect(path)
-    c = conn.cursor()
-    # active_l_participant_counter()
-    global table_name
-    table_name = "active_learning_"+str(username)
-    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
-    c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
-    conn.commit()
-    conn.close()
-    create_new_training_set_table()
-    return display_article()
 
-# Version 2 for feature feedback
-def new_table_feature_feedback(path, username):
-    conn = sqlite3.connect(path)
-    c = conn.cursor()
-    # feature_f_participant_counter()
-    create_reweighting_table(username)
-    global table_name
-    table_name = "feature_feedback_"+str(username)
-    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
-    c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
-    conn.commit()
-    conn.close()
-    create_new_training_set_table()
-    # Return random article as the first one to be shown to the user. This function is only called once.
-    return display_article_manual_reweighting(random.randrange(0, 500))
 
 #This copies the original training set and adds newly labelled instances to it. One table per participant.
 def create_new_training_set_table():
@@ -330,7 +301,6 @@ class ReviewForm(Form):
                                 validators.length(min=1)])
 
 
-
 ##### ##### ##### ##### #####
 #### Flask functions ######
 
@@ -350,12 +320,48 @@ def display_app_at_random():
     if checkbox == "confirmed":
         page = random.randrange(0, 2)
     if page == 0:
-        return new_table_active(db2, username)
+        return render_template('active-learning-user-instructions.html')
+        #return new_table_active(db2, username)
     elif page == 1:
-        return new_table_feature_feedback(db2, username)
+        return render_template('feature-labelling-user-instructions.html')
+        #return new_table_feature_feedback(db2, username)
     else:
         return render_template('opt-in.html')
 
+
+#### To be called whenever someone clicks they accept the T&C's on the welcome page, creating a new table
+# Version 1 for active learning
+@app.route('/active-learning', methods=['POST'])
+def new_table_active():
+    confirmed = request.form['proceed_with_study']
+    conn = sqlite3.connect(db2)
+    c = conn.cursor()
+    # active_l_participant_counter()
+    global table_name
+    table_name = "active_learning_"+str(username)
+    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
+    c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
+    conn.commit()
+    conn.close()
+    create_new_training_set_table()
+    return display_article()
+
+# Version 2 for feature feedback
+@app.route('/feature-feedback', methods=['POST'])
+def new_table_feature_feedback():
+    conn = sqlite3.connect(db2)
+    c = conn.cursor()
+    # feature_f_participant_counter()
+    create_reweighting_table(username)
+    global table_name
+    table_name = "feature_feedback_"+str(username)
+    c.execute("CREATE TABLE "+table_name+"(ind INT, indexID INT, Headline TEXT, Text TEXT, Full_Text TEXT, prediction INT, predicted_labels TEXT, class_proba INT)")
+    c.execute("INSERT INTO "+table_name+" SELECT * FROM RCV1_test_X;")
+    conn.commit()
+    conn.close()
+    create_new_training_set_table()
+    # Return random article as the first one to be shown to the user. This function is only called once.
+    return display_article_manual_reweighting(random.randrange(0, 500))
 
 # This displays the active learning version. This function uses the uncertainty_query function defined above and uses it in a
 # SQL SELECT query to display to the user the article which the model is most uncertain about
