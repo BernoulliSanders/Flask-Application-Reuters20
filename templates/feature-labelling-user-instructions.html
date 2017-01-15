@@ -5,17 +5,36 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
 </head>
 <body>
+<h3>Study instructions
+</h3>
 <p>
-The algorithm has seen two articles, one about “”, the other not. Your objective here is to ‘teach’ the algorithm what the topic is about, so that it can successfully predict whether new articles are about the topic or not.</p>
+The algorithm has seen two articles so far, one about 'Science & Technology', the other about 'Health'. Your objective here is to ‘teach’ the algorithm what the topic is about, so that it can successfully predict whether new articles are about the topic or not. To help you get an understanding of the topics, these two articles are shown at the bottom of this page. On the next page, there will also be a menu on the left hand side, and you can browse different articles until you have a feel for the topics.</p>
 <p>
-You can do this by means of stating whether you think its predictions are correct or incorrect, and additionally by giving feedback on specific words.
+You can teach the algorithm by stating whether you think its predictions are correct or incorrect, and additionally by giving feedback on specific words which it is associating with the topic in order to make its predictions.
 </p>
 <p>
 Ten words will be highlighted in yellow. These are the 10 words which the system places the most importance on when making its prediction as to whether the article is about this topic or not.</p>
-<p>These 10 words will also be displayed in a sidebar which appears on the right hand side of the page. You can increase or decrease the importance of these words, if you think it will help the algorithm to 'learn' the topic.</p>
+<p>These 10 words will also be displayed in a sidebar which appears on the right hand side of the page. You can increase or decrease the importance of these words, if you think it will help the algorithm to 'learn' the topic. There will be bar charts to compare the relative importance of the top 10 words. </p>
+<p><strong>Please note:</strong> These lists and bar charts will not update in response to your feedback. However, your feedback is being tracked and will be analysed.</p>
 <p>Additionally, you will be shown the top ten words out of every article which the algorithm has seen - so before you've given any feedback this will be based on the two articles it has already seen.</p>
 <p>
-If you see another word in the article which you would expect to be strongly associated with the predicted topic which is NOT highlighted in yellow (for example, ‘earthquake’ for the topic ‘Disasters’, or 'goal' for the topic 'Footbal'), then please enter it under ‘Add new words’. It is also possible to do this even if the word does not appear in the text.
+If you see another word in the article which you would expect to be strongly associated with the predicted topic which is NOT highlighted in yellow (for example, ‘earthquake’ for the topic ‘Disasters’, or 'goal' for the topic 'Football'), then please enter it under ‘Add new words’. You can also add words which do not appear in the article, based on your prior knowledge of the topic.
+</p>
+<p>Once you've considered adding words or 'labelling' the words which are presented to you, you need to click the 'Correct' or 'Incorrect' button to submit the feedback. It is likely that for the first few articles you see, the words explaining the prediction will seem a bit arbitrary, so it is important to give feedback on words early on in the study. You may find that after you've given feedback on a number of articles, the words presented seem more reasonable.</p>
+<p>Although there is no time limit imposed on this task, the amount of time spent is recorded, so it is important for the accuracy of the study's results that you complete the task in one sitting and remain focused on it. When you are confident that you've understood the instructions, and are ready to start, please click 'Proceed' below.</p>
+
+<h3><em>Science & Technology example article:</em></h3>
+<h3>EU's Cresson rules out human cloning research.
+</h3>
+<p>The European Union opposes research into human cloning, EU Research Commissioner Edith Cresson said on Tuesday. ""For obvious ethical reasons, there is a consensus among the international scientific community to ban research into human cloning,"" Cresson told the European Parliament. Cresson, a former French socialist prime minister, noted that EU research programmes excluded human cloning and several member states had also banned such work. Reacting to the recent successful cloning of a sheep, named Dolly, at Scotland's Roslin Institute, Cresson said this raised important ethical questions about animal welfare, biodiversity and possible risks of extending such techniques to humans. Cresson said the EU's executive commission had asked its biotechnology ethics committee, an independent advisory body, to report back on the implications of the Scottish cloning by May. The most obvious danger was the temptation to use the technique, which creates genetically identical individuals by splitting embryos or by transferring the nucleus of one cell into an egg, to clone humans. ""But we should not underestimate potential benefits of such a discovery, notably for human health,"" Cresson said. Advocates of animal cloning point to other advantages, such as the possibility of producing sheep which are entirely free from scrapie, a disease similar to mad cow disease. ""There are ethical problems in using the technique. There are ethical problems in not using the techniques as well,"" said Ken Collins, chairman of the parliament's environment committee. Euro-MPs from across the political spectrum ruled out taking the technique further and cloning human beings. They are expected on Wednesday to pass a resolution demanding an immediate global ban on human cloning and a moratorium on animal cloning. ""We cannot assume that because we have something under control in the European Union, that it is universally under control. It isn't,"" Collins warned. Euro-MPs want the Commission to play a leading role in pushing for a worldwide ban on human cloning, namely by convincing Japan and the United States -- the EU's main competitors in the field of biotechnology.
+</p>
+
+<h3><em>Health example article:</em></h3>
+<h3>3M says wins Memphis breast implant case.
+</h3>
+<p>
+Minnesota Mining and Manufacturing Co said on Friday that a Memphis, Tennessee jury ruled in its favor in a breast implant case.   The jury decided after six hours of deliberation that Minnesota Mining should not be held liable for allegations by the plaintiff, Sandra Tyson, that her breast implants caused her to have health problems, Minnesota Mining said. The trial lasted five weeks. This is the second time in the past year that a jury has found in favor of the company, Minnesota Mining said, adding that in a third case, the jury was deadlocked.   ""We are extremely pleased by the verdict,"" said Dr Carol Ley, associate medical director for the company. ""It means that science is having its day in court, with a legal decision supporting what the medical community has determined.  The well-controlled scientific studies on breast implants, which number at least 16, have found no association between silicone gel breast implants and disease. ""We sympathize with anyone who is ill,"" Ley said in a news release. ""But this suit and others like it are not based on scientific evidence.""   Shares of Minnesota Mining rose 3/8 to 72-1/2. 	     Chicago newsdesk 312 408 8787
+
 </p>
 <p>
 <form action="/feature-feedback" method="post">

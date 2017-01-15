@@ -5,7 +5,23 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='style-for-reweighting-app.css') }}">
 </head>
 <body>
-<p>Click correct or incorrect.</p>
+<p>
+The algorithm has seen two articles, one about 'Science & Technology', the other about 'Health'. Your objective here is to ‘teach’ the algorithm what the topic is about, so that it can successfully predict which topic new articles are about. To help you get an understanding of the topics, these two articles are shown below. </p>
+<p>To do this, you will be presented with a series of news article on the following page along with the algorithm's prediction of their topic. You will be expected to state whether you think that each prediction is correct or incorrect. Read as much of the article as necessary until you're confident of your judgement, but in certain cases, you may have a clear idea upon just reading the headline. You will be expected to give feedback on 20 articles.</p>
+<p>Although there is no time limit imposed on this task, the amount of time spent is recorded, so it is important for the accuracy of the study's results that you complete the task in one sitting and remain focused on it. When you are confident that you've understood the instructions, and are ready to start, please click 'Proceed' below.</p>
+
+<h3><em>Science & Technology example article:</em></h3>
+<h3>Robot soldiers to debut soon - U.S. scientists.
+</h3>
+<p>Tiny "robot soldiers" capable of clearing landmines, detecting chemical weapons and guiding missile strikes ahead of troops will be commonplace by 2001, scientists said on Monday. So-called Small, Smart Machines -- also known as "battlefield robots" -- being designed in a $33 million lab unveiled in Albuquerque on Monday will be the size of a shoe box or as small as a dime. They will crawl, hop and eventually fly over minefields, across deserts and beaches and through towns, gathering information for nearby troops or headquarters thousands of miles away. "These little guys will do things it's impossible for people to do now," said Pat Eicker, director of Intelligent Systems and Robotics at Sandia National Laboratories (SNL). "If bad chemicals were being produced in a building you could send in a herd of them to gather data," he said. Knicknamed "robugs," the tiny battlefield robots will be cheap and dispensable, loaded with electronics found on walkmans and cellular phones, said Tom Weber, a researcher on SNL's robot programme, the largest in the United States. Weber said the "robugs" may first be used to clear landmines in countries like Cambodia and Bosnia.
+</p>
+
+<h3><em>Health example article:</em></h3>
+<h3>GalaGen Sporidin-G results favorable.
+</h3>
+<p>
+"GalaGen Inc said Monday use of its Sporidin-G showed favorable clinical results and an acceptable safety profile in the treatment of diarrhea caused by Cryptosporidium parvum in patients with AIDS. GalaGen said the results are from a Phase I/II study in 24 patients and are published today in the December 1996 issue of The Journal of Acquired Immune Deficiency Syndrome and Human Retrovirology. Based on these positive results, GalaGen said it is conducting a Phase II/III double-blind placebo-controlled study using an advanced, more potent formulation of Sporidin-G.   The company said it expects the Phase II/III trial, being conducted at multiple sites throughout the United States, will be fully enrolled in early 1997. If the trial demonstrated efficacy of the drug, GalaGen said the data might support the filing of a product licensing application with the U.S. Food and Drug Administration, and with regulatory authorities in Europe and Latin America. In the Phase I/II study, was conducted by researchers at the University of California, San Francisco. ""The current oral formulation of Sporidin-G that is being studied in the ongoing trial has a nearly four-fold greater concentration of antibodies specific for C. parvum than the product used in this initial clinical study,""  Robert Hoerr, president of GalaGen, said.  ""Based on the results of this initial study, we have great confidence in the new formulation of our product as a clinically attractive, safe and viable treatment for cryptosporidiosis."" C. parvum, the parasite responsible for cryptosporidiosis, is an infection in AIDS patients that can cause intractable diarrhea, profound weight loss, malnutrition, dehydration and, in some cases, death, GalaGen said. Reuters Chicago Newsdesk (312) 408-8787"
+</p>
 <p>
 <form action="/active-learning" method="post">
 <div id='button'>

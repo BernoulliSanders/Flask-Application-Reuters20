@@ -8,10 +8,11 @@
 <body>
 
   <table class="table1" style="float:right">
-  <tr><th>Defence</th></tr>
-  <tr><td><p class="narrow">The first possible class is about....</p> </td></tr>
-  <tr><th>Environment</th></tr>
-  <tr><td><p class="narrow">The second possible class is about....</p> </td></tr>  
+  <tr><th>Is this article about Science & Technology or Health?</th></tr>
+
+  <tr><td><p class="narrow"></p></td></tr>  
+<tr><td><strong>Feedback given: {{ feedback_given }} /20 </strong></td></tr>  
+<tr><td>Once you've given feedback on 20 articles, simply close the window and your feedback will be saved.</td></tr>
   </table>  
 
 <div>
@@ -24,7 +25,7 @@
 </p>
 
 <p>
-<strong>Prediction margin:</strong> {{ item.class_proba }}
+<!--<strong>Prediction margin:</strong> {{ item.class_proba }} -->
 </p>
 <p>
            {{ item.Text }}

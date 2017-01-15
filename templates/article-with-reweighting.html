@@ -16,33 +16,40 @@
 <table class="table1" style="float:right">
 {% from "_formhelpers.html" import render_field %}
 <tr><th colspan="2">
- Why was this article predicted as being about {% for item in items %} {{ item.predicted_labels }}{% endfor %}?
- </br>
- Top 10 words from this topic:
+Legend:<br>
 </th></tr>
+<tr><td>
+
+'H' : Health <br>
+'=' : Neutral (words which could apply to either)<br>
+'S' : Science & Technology</br>
+'-' : Words which seem irrelevant/generic</br></br>
+<em>Use your judgement to change these, as appropriate. </em>
+</td></tr>
 <tr><td>
 <form action="/update-v2" method="post">
 <table class="table2">
-<th colspan="2">This article:</th>
+<th colspan="2"> Why was this article predicted as being about {% for item in items %} {{ item.predicted_labels }}{% endfor %}?
+</th>
 <tr>
 <td>
-<table class="table2">
+<table class="table3">
 <tr><td>
 
 
-<div id="myDiv" style="width: 130px; height: 235px;"><!-- Plotly chart will be drawn inside this DIV --></div>
+<div id="myDiv" style="width: 130px; height: 225px;"><!-- Plotly chart will be drawn inside this DIV --></div>
 
   <script>
-var data = [{
+    var data = [{
   type: 'bar',
-  y: [ {% for key, value in topten_for_chart_article.items() %} ' {{ key }} ', {% endfor %} ],
-  x: [ {% for key, value in topten_for_chart_article.items() %} {{ value }}, {% endfor %} ],
+  y: [ {% for key, value in lime_features_for_chart.items() %} ' {{ key }} ', {% endfor %} ],
+  x: [ {% for key, value in lime_features_for_chart.items() %} {{ value }}, {% endfor %} ],
   orientation: 'h'
 }];
 
 var layout = { showlegend: false, ascending: true, paper_bgcolor: 'rgba(0,0,0,0)',
  margin: {
-    l: 80,
+    l: 100,
     r: 2,
     t: 2,b: 1
   },
@@ -63,41 +70,53 @@ Plotly.newPlot('myDiv', data, layout, {staticPlot: true});
 </td>
 <td>
 <table class="table3">
-{% for key, value in top_ten_from_article.items() %}
-<tr><td>
-<input type="radio" name="change_weight_overall_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
-<input type="radio" name="change_weight_overall_{{ loop.index }}" value="ignore {{ key }}" checked><strong>=</strong>
-  <input type="radio" name="change_weight_overall_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
+{% for key, value in lime_features.items() %}
+<tr><td class="small">
+<input type="radio" name="change_weight_{{ loop.index }}" value="Health {{ key }} LIME">H
+<input type="radio" name="change_weight_{{ loop.index }}" value="Neutral {{ key }} LIME" checked>=
+  <input type="radio" name="change_weight_{{ loop.index }}" value="Science {{ key }} LIME">S
+  <input type="radio" name="change_weight_{{ loop.index }}" value="Irrelavant {{ key }} LIME">-
 </td></tr>
 {% endfor %} 
 </table>
 </td></tr> 
 </table>
-</td>
+
+
+
+
+</td> 
+</tr>
+
+
+<tr>
 <td>
+
+
+
 <table class="table2">
-<th colspan="2">All articles:</th>
+<th colspan="2"> Top 10 words from this topic*</th>
 <tr><td>
 
 
-<table class="table2">
+<table class="table3">
   <tr><td>
 
 
-  <div id="myDiv2" style="width: 130px; height: 235px;"><!-- Plotly chart will be drawn inside this DIV --></div>
+  <div id="myDiv2" style="width: 130px; height: 225px;"><!-- Plotly chart will be drawn inside this DIV --></div>
 
   <script>
 
     var data = [{
   type: 'bar',
-  y: [ {% for key, value in topten_for_chart.items() %} ' {{ key }} ', {% endfor %} ],
-  x: [ {% for key, value in topten_for_chart.items() %} {{ value }}, {% endfor %} ],
+  y: [ {% for key, value in topten_for_chart_article.items() %} ' {{ key }} ', {% endfor %} ],
+  x: [ {% for key, value in topten_for_chart_article.items() %} {{ value }}, {% endfor %} ],
   orientation: 'h'
 }];
 
 var layout = { showlegend: false, ascending: true, paper_bgcolor: 'rgba(0,0,0,0)',
  margin: {
-    l: 80,
+    l: 100,
     r: 2,
     t: 2,b: 1
   },
@@ -122,11 +141,12 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
 <td>
 <table class="table3">
 <tr><td>
-{% for key, value in topten.items() %}
-<tr><td>
-<input type="radio" name="change_weight_{{ loop.index }}" value="increase {{ key }}"> <strong>+</strong>
-<input type="radio" name="change_weight_{{ loop.index }}" value="ignore {{ key }}" checked> <strong>=</strong>
-  <input type="radio" name="change_weight_{{ loop.index }}" value="decrease {{ key }}"><strong>-</strong>
+{% for key, value in top_ten_from_article.items() %}
+<tr><td class="small">
+<input type="radio" name="change_weight_overall_{{ loop.index }}" value="Health {{ key }} LR_coef"> H
+<input type="radio" name="change_weight_overall_{{ loop.index }}" value="Neutral {{ key }} LR_coef" checked>=
+  <input type="radio" name="change_weight_overall_{{ loop.index }}" value="Science {{ key }} LR_coef">S
+  <input type="radio" name="change_weight_overall_{{ loop.index }}" value="Irrelevant {{ key }} LR_coef">-
 </td></tr>
 {% endfor %}
 </td></tr>
@@ -139,8 +159,8 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
 
 
 <tr><td colspan="2"></td></tr>
-<tr><th colspan="2">Optional: Add new words</th></tr>
-<tr><td colspan="2">If you can think of any words which would better describe the topic {% for item in items %} <strong>'{{item.predicted_labels }}' </strong>{% endfor %} than those above, enter them here (Multiple words permitted)</td></tr>
+<tr><th colspan="2">Add new words related to {% for item in items %} '{{item.predicted_labels }}' {% endfor %} </th></tr>
+<tr><td colspan="2">If you see words in the article, or can think of any others which would better describe the topic {% for item in items %} <strong>'{{item.predicted_labels }}' </strong>than those listed above, enter them here (Multiple words permitted). Choose words which you would expect to see in a reasonably large number of articles about {{ item.predicted_labels }} {% endfor %}. Otherwise, leave this field blank.</td></tr>
 <tr><td>
 
 <dl>
@@ -157,10 +177,10 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
     <input type="hidden" value="{{ articleid }}" name="articleid">
     </form>
     <br>
-    <strong>Feedback given: {{ feedback_given }} /30 </strong>
-    </td>
-</div>
-</tr>
+    <strong>Feedback given: {{ feedback_given }} /20 </strong>
+    </td></tr>
+<tr><td>Once you have given feedback on 20 articles, simply close the window and your feedback will be saved.</td></tr>
+<tr><td><br><strong>*</strong>: These are the top ten words for this topic from all articles which the algorithm has seen so far</td></tr>
 </table>
 
 <div class="container">
@@ -180,6 +200,8 @@ Plotly.newPlot('myDiv2', data, layout, {staticPlot: true});
            {{ article }}
     </p>
 {% endfor %}
+
+</p>
 
 </div>
 
